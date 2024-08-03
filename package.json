@@ -10,9 +10,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@chakra-ui/react": "^2.8.2",
+    "@emotion/react": "^11.13.0",
+    "@emotion/styled": "^11.13.0",
     "@google-cloud/speech": "^6.7.0",
     "@google-cloud/text-to-speech": "^5.3.0",
     "@google-cloud/vision": "^4.3.0",
+    "framer-motion": "^11.3.21",
     "next": "^14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
