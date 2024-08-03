@@ -1,9 +1,15 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Box, Button } from '@chakra-ui/react';
+import { Box, Button, VStack } from '@chakra-ui/react';
+import VisionResult from './VisionResult';
+
+interface VisionResult {
+  labels: Array<{ description: string; score: number }>;
+}
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [visionResult, setVisionResult] = useState<VisionResult | null>(null);
 
   const startCamera = async () => {
     try {
@@ -40,11 +46,17 @@ const Camera: React.FC = () => {
         },
         body: JSON.stringify({ image: imageDataUrl }),
       });
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
-      console.log("Vision API response:", data);
-      // ここで結果を処理したり、状態を更新したりします
+      if (!data || !data.labels) {
+        throw new Error('Invalid response from Vision API');
+      }
+      setVisionResult(data);
     } catch (error) {
       console.error("Error calling Vision API:", error);
+      setVisionResult({ labels: [] });
     }
   }
 };
@@ -56,12 +68,17 @@ const Camera: React.FC = () => {
   }, []);
 
   return (
-    <Box>
-      <video ref={videoRef} autoPlay playsInline />
-      <Button onClick={startCamera} m={2}>Start Camera</Button>
-      <Button onClick={stopCamera} m={2}>Stop Camera</Button>
-      <Button onClick={captureImage} m={2}>Capture Image</Button>
-    </Box>
+    <VStack spacing={4} align="stretch">
+      <Box>
+        <video ref={videoRef} autoPlay playsInline />
+      </Box>
+      <Box>
+        <Button onClick={startCamera} mr={2}>Start Camera</Button>
+        <Button onClick={stopCamera} mr={2}>Stop Camera</Button>
+        <Button onClick={captureImage}>Capture Image</Button>
+      </Box>
+      <VisionResult result={visionResult} />
+    </VStack>
   );
 };
 

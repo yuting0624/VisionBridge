@@ -9,11 +9,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     try {
       const { image } = req.body;
-      const [result] = await client.labelDetection(image);
-      const labels = result.labelAnnotations;
+      if (!image) {
+        return res.status(400).json({ error: 'No image data provided' });
+      }
+      
+      // Base64データからバッファを作成
+      const buffer = Buffer.from(image.split(',')[1], 'base64');
+      
+      const [result] = await client.labelDetection({
+        image: { content: buffer }
+      });
+      
+      const labels = result.labelAnnotations || [];
       res.status(200).json({ labels });
     } catch (error) {
-      res.status(500).json({ error: 'Error processing image' });
+      console.error('Error processing image:', error);
+      res.status(500).json({ error: 'Error processing image', details: error.message });
     }
   } else {
     res.setHeader('Allow', ['POST']);
