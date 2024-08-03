@@ -1,5 +1,16 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
 import { VertexAI } from '@google-cloud/vertexai';
+
+function createTempCredentialsFile() {
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+    const tempFilePath = join('/tmp', 'google-credentials.json');
+    writeFileSync(tempFilePath, process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
+    return tempFilePath;
+  }
+  return null;
+}
 
 const PROJECT_ID = process.env.GCP_PROJECT_ID;
 const LOCATION = 'us-central1';
@@ -17,10 +28,8 @@ const model = vertexAi.preview.getGenerativeModel({
 const createPrompt = (previousAnalysis: string | null) => {
 if (previousAnalysis === null) {
     return `
-画像の主要素と即時の危険を3つまで、15字以内の短文で列挙してください。例：
-1. 前方に椅子あり
-2. 右側に人物接近中
-3. 床に障害物あり
+現在の画像の主要な要素、潜在的な障害物、危険要素を簡潔に説明してください。回答は2-3の短い日本語の文で、シンプルで直接的な表現を使用してください。
+例: '前方1メートルに椅子があります。右に曲がってください。' '床にコードがあり、つまずく可能性があります。注意してください。'
 `;
   }
   return `
@@ -58,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('Vertex AI response:', JSON.stringify(result, null, 2));
 
       // result.candidates[0].content.parts[0].text を使用して結果を取得
-      const analysisText = result.candidates[0].content.parts[0].text;
+      const analysisText = result.candidates![0].content.parts[0].text;
       
       res.status(200).json({ analysis: analysisText });
     } catch (error) {
