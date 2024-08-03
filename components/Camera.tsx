@@ -1,11 +1,16 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Box, Button, VStack, AspectRatio, Text } from '@chakra-ui/react';
-import VisionResult from './VisionResult';
+import { Box, Button, VStack, AspectRatio, Text, Select } from '@chakra-ui/react';
+import { analyzeImageWithGemini } from '../utils/imageAnalysis';
+import { speakText } from '../utils/speechSynthesis';
+import { stopSpeaking } from '../utils/speechSynthesis';
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
-  const [visionResult, setVisionResult] = useState<any | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [previousAnalysis, setPreviousAnalysis] = useState<string | null>(null);
+  const [captureInterval, setCaptureInterval] = useState<number>(5000);
 
   const startCamera = async () => {
     try {
@@ -23,10 +28,37 @@ const Camera: React.FC = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
+      setIsAnalyzing(false);
     }
   };
 
-  const captureImage = async () => {
+  const startAnalysis = () => {
+    setIsAnalyzing(true);
+  };
+
+  const stopAnalysis = () => {
+    setIsAnalyzing(false);
+  };
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (isAnalyzing) {
+      intervalId = setInterval(() => {
+        captureAndAnalyzeImage();
+      }, captureInterval); // 1秒ごとに分析
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isAnalyzing, captureInterval]);
+
+   const handleIntervalChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setCaptureInterval(Number(event.target.value));
+  };
+
+ const captureAndAnalyzeImage = async () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
@@ -35,54 +67,46 @@ const Camera: React.FC = () => {
       const imageDataUrl = canvas.toDataURL('image/jpeg');
       
       try {
-        const response = await fetch('/api/vision', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ image: imageDataUrl }),
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        const result = await analyzeImageWithGemini(imageDataUrl, previousAnalysis);
+        setAnalysisResult(result);
+        if (result !== "変更なし") {
+          speakText(result);
         }
-        const data = await response.json();
-        setVisionResult(data);
+        setPreviousAnalysis(result);
       } catch (error) {
-        console.error("Error calling Vision API:", error);
-        setVisionResult(null);
+        console.error("Error analyzing image:", error);
+        setAnalysisResult("画像分析中にエラーが発生しました");
+        speakText("画像分析中にエラーが発生しました");
       }
     }
   };
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, []);
+  const calculateDiff = (prev: string | null, current: string): string => {
+    if (!prev) return current;
+    // 簡単な差分計算の例（実際にはより洗練された方法を使用することをお勧めします）
+    const prevWords = new Set(prev.split(' '));
+    const currentWords = current.split(' ');
+    const newWords = currentWords.filter(word => !prevWords.has(word));
+    return newWords.length > 0 ? newWords.join(' ') : "No significant changes detected.";
+  };
 
   return (
-     <VStack spacing={4} align="stretch">
-      <Text fontSize="xl" fontWeight="bold">Camera</Text>
+    <VStack spacing={4} align="stretch">
       <AspectRatio maxW="100%" ratio={16/9}>
-        {stream ? (
-          <video ref={videoRef} autoPlay playsInline />
-        ) : (
-          <Box bg="gray.200" display="flex" alignItems="center" justifyContent="center">
-            <Text>Camera is off</Text>
-          </Box>
-        )}
+        <video ref={videoRef} autoPlay playsInline />
       </AspectRatio>
       <Box>
-        {!stream ? (
-          <Button onClick={startCamera} colorScheme="green">Start Camera</Button>
-        ) : (
-          <>
-            <Button onClick={stopCamera} colorScheme="red" mr={2}>Stop Camera</Button>
-            <Button onClick={captureImage} colorScheme="blue">Capture Image</Button>
-          </>
-        )}
+        <Button onClick={startCamera} mr={2} isDisabled={!!stream}>Start Camera</Button>
+        <Button onClick={stopCamera} mr={2} isDisabled={!stream}>Stop Camera</Button>
+        <Button onClick={startAnalysis} mr={2} isDisabled={!stream || isAnalyzing}>Start Analysis</Button>
+        <Button onClick={stopAnalysis} isDisabled={!isAnalyzing}>Stop Analysis</Button>
+         <Button onClick={stopSpeaking} colorScheme="red">Stop Speaking</Button>
       </Box>
-      <VisionResult result={visionResult} />
+        <Select onChange={handleIntervalChange} value={captureInterval}>
+        <option value={3000}>Every 3 seconds</option>
+        <option value={5000}>Every 5 seconds</option>
+        <option value={10000}>Every 10 seconds</option>
+      </Select>
     </VStack>
   );
 };
