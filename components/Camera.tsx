@@ -1,7 +1,10 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Box, Button, VStack, AspectRatio, Text, Select } from '@chakra-ui/react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb } from '@chakra-ui/react';
 import { analyzeImageWithGemini } from '../utils/imageAnalysis';
-import { speakText, stopSpeaking } from '../utils/speechSynthesis';
+import { speakText, stopSpeaking, setSpeechRate, setSpeechVolume } from '../utils/speechSynthesis';
+import { provideNavigation } from '../utils/navigation';
+import { initializeSpeechRecognition, addVoiceCommand } from '../utils/speechRecognition';
+import { UserSettings, saveUserSettings, loadUserSettings } from '../utils/userSettings';
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -9,8 +12,26 @@ const Camera: React.FC = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [previousAnalysis, setPreviousAnalysis] = useState<string | null>(null);
-  const [captureInterval, setCaptureInterval] = useState<number>(5000);
   const [isFirstAnalysis, setIsFirstAnalysis] = useState(true);
+  const [settings, setSettings] = useState<UserSettings>(loadUserSettings());
+
+  useEffect(() => {
+    setSettings(loadUserSettings());
+    initializeSpeechRecognition();
+    addVoiceCommand('開始', startAnalysis);
+    addVoiceCommand('停止', stopAnalysis);
+    addVoiceCommand('ナビゲーション', () => provideNavigation(analysisResult || ''));
+  }, []);
+
+  useEffect(() => {
+    setSpeechRate(settings.speechRate);
+    setSpeechVolume(settings.speechVolume);
+    saveUserSettings(settings);
+  }, [settings]);
+
+  const handleSettingsChange = (key: keyof UserSettings, value: number) => {
+    setSettings(prev => ({ ...prev, [key]: value }));
+  };
 
   const startCamera = async () => {
     try {
@@ -43,7 +64,7 @@ const Camera: React.FC = () => {
     setIsFirstAnalysis(true);
   };
 
-  const captureAndAnalyzeImage = async () => {
+  const captureAndAnalyzeImage = useCallback(async () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
@@ -67,7 +88,7 @@ const Camera: React.FC = () => {
         speakText("画像分析中にエラーが発生しました");
       }
     }
-  };
+  }, [isFirstAnalysis, previousAnalysis]);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -75,17 +96,14 @@ const Camera: React.FC = () => {
     if (isAnalyzing) {
       intervalId = setInterval(() => {
         captureAndAnalyzeImage();
-      }, captureInterval);
+      }, settings.captureInterval);
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isAnalyzing, captureInterval]);
+  }, [isAnalyzing, settings.captureInterval, captureAndAnalyzeImage]);
 
-  const handleIntervalChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setCaptureInterval(Number(event.target.value));
-  };
 
   return (
     <VStack spacing={4} align="stretch">
@@ -99,17 +117,48 @@ const Camera: React.FC = () => {
         <Button onClick={stopAnalysis} isDisabled={!isAnalyzing}>Stop Analysis</Button>
         <Button onClick={stopSpeaking} colorScheme="red">Stop Speaking</Button>
       </Box>
-      <Select onChange={handleIntervalChange} value={captureInterval}>
-        <option value={3000}>Every 3 seconds</option>
-        <option value={5000}>Every 5 seconds</option>
-        <option value={10000}>Every 10 seconds</option>
-      </Select>
       {analysisResult && (
         <Box mt={4}>
           <Text fontWeight="bold">Analysis Result:</Text>
           <Text>{analysisResult}</Text>
         </Box>
       )}
+      <Text>Capture Interval</Text>
+      <Select
+        value={settings.captureInterval}
+        onChange={(e) => handleSettingsChange('captureInterval', Number(e.target.value))}
+      >
+        <option value={3000}>Every 3 seconds</option>
+        <option value={5000}>Every 5 seconds</option>
+        <option value={10000}>Every 10 seconds</option>
+      </Select>
+      <Text>Speech Rate</Text>
+      <Slider
+        min={0.5}
+        max={2}
+        step={0.1}
+        value={settings.speechRate}
+        onChange={(v) => handleSettingsChange('speechRate', v)}
+      >
+        <SliderTrack>
+          <SliderFilledTrack />
+        </SliderTrack>
+        <SliderThumb />
+      </Slider>
+      <Text>Speech Volume</Text>
+      <Slider
+        min={0}
+        max={1}
+        step={0.1}
+        value={settings.speechVolume}
+        onChange={(v) => handleSettingsChange('speechVolume', v)}
+      >
+        <SliderTrack>
+          <SliderFilledTrack />
+        </SliderTrack>
+        <SliderThumb />
+      </Slider>
+      <Button onClick={() => provideNavigation(analysisResult || '')}>Provide Navigation</Button>
     </VStack>
   );
 };
