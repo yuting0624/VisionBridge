@@ -1,16 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { writeFileSync } from 'fs';
-import { join } from 'path';
 import { VertexAI } from '@google-cloud/vertexai';
-
-function createTempCredentialsFile() {
-  if (process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
-    const tempFilePath = join('/tmp', 'google-credentials.json');
-    writeFileSync(tempFilePath, process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
-    return tempFilePath;
-  }
-  return null;
-}
 
 const PROJECT_ID = process.env.GCP_PROJECT_ID;
 const LOCATION = 'us-central1';
