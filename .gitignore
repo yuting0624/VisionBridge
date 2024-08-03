@@ -1,2 +1,6 @@
 node_modules
-.env*.local
+# Ignore .next directory
+.next
+
+# Ignore .env.local file
+.env.local
