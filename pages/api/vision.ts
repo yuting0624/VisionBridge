@@ -1,5 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import vision from '@google-cloud/vision';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
 
 const client = new vision.ImageAnnotatorClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
@@ -23,8 +25,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const labels = result.labelAnnotations || [];
       res.status(200).json({ labels });
     } catch (error) {
-      console.error('Error processing image:', error);
-      res.status(500).json({ error: 'Error processing image', details: error.message });
+     console.error('Error processing image:', error);
+      if (error instanceof Error) {
+        res.status(500).json({ error: 'Error processing image', details: error.message });
+      } else {
+        res.status(500).json({ error: 'Error processing image', details: 'An unknown error occurred' });
+      }
     }
   } else {
     res.setHeader('Allow', ['POST']);
