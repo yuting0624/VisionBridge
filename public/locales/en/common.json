@@ -1,0 +1,9 @@
+{
+  "title": "VisionBridge",
+  "startCamera": "カメラ開始",
+  "stopCamera": "カメラ停止",
+  "startAnalysis": "分析開始",
+  "stopAnalysis": "分析停止",
+  "stopSpeaking": "読み上げ停止",
+  "offlineMessage": "現在オフラインです。一部の機能が利用できない可能性があります。"
+}

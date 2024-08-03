@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
     "@emotion/react": "^11.13.0",
     "@emotion/styled": "^11.13.0",
@@ -19,9 +20,13 @@
     "@google-cloud/vision": "^4.3.0",
     "@google/generative-ai": "^0.16.0",
     "framer-motion": "^11.3.21",
+    "i18next": "^23.12.2",
     "next": "^14.2.5",
+    "next-i18next": "^15.3.1",
+    "next-pwa": "^5.6.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.1.0",
