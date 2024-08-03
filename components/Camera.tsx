@@ -1,8 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Box, Button, VStack, AspectRatio, Text, Select } from '@chakra-ui/react';
 import { analyzeImageWithGemini } from '../utils/imageAnalysis';
-import { speakText } from '../utils/speechSynthesis';
-import { stopSpeaking } from '../utils/speechSynthesis';
+import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -11,6 +10,7 @@ const Camera: React.FC = () => {
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [previousAnalysis, setPreviousAnalysis] = useState<string | null>(null);
   const [captureInterval, setCaptureInterval] = useState<number>(5000);
+  const [isFirstAnalysis, setIsFirstAnalysis] = useState(true);
 
   const startCamera = async () => {
     try {
@@ -28,37 +28,22 @@ const Camera: React.FC = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
-      setIsAnalyzing(false);
     }
+    stopAnalysis();
   };
 
   const startAnalysis = () => {
     setIsAnalyzing(true);
+    setIsFirstAnalysis(true);
   };
 
   const stopAnalysis = () => {
     setIsAnalyzing(false);
+    setPreviousAnalysis(null);
+    setIsFirstAnalysis(true);
   };
 
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    if (isAnalyzing) {
-      intervalId = setInterval(() => {
-        captureAndAnalyzeImage();
-      }, captureInterval); // 1秒ごとに分析
-    }
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [isAnalyzing, captureInterval]);
-
-   const handleIntervalChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setCaptureInterval(Number(event.target.value));
-  };
-
- const captureAndAnalyzeImage = async () => {
+  const captureAndAnalyzeImage = async () => {
     if (videoRef.current) {
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
@@ -67,12 +52,15 @@ const Camera: React.FC = () => {
       const imageDataUrl = canvas.toDataURL('image/jpeg');
       
       try {
-        const result = await analyzeImageWithGemini(imageDataUrl, previousAnalysis);
+        const result = await analyzeImageWithGemini(imageDataUrl, isFirstAnalysis ? null : previousAnalysis);
         setAnalysisResult(result);
-        if (result !== "変更なし") {
+        
+        if (isFirstAnalysis || (result !== "変更なし" && result !== "")) {
           speakText(result);
         }
+        
         setPreviousAnalysis(result);
+        setIsFirstAnalysis(false);
       } catch (error) {
         console.error("Error analyzing image:", error);
         setAnalysisResult("画像分析中にエラーが発生しました");
@@ -81,13 +69,22 @@ const Camera: React.FC = () => {
     }
   };
 
-  const calculateDiff = (prev: string | null, current: string): string => {
-    if (!prev) return current;
-    // 簡単な差分計算の例（実際にはより洗練された方法を使用することをお勧めします）
-    const prevWords = new Set(prev.split(' '));
-    const currentWords = current.split(' ');
-    const newWords = currentWords.filter(word => !prevWords.has(word));
-    return newWords.length > 0 ? newWords.join(' ') : "No significant changes detected.";
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    if (isAnalyzing) {
+      intervalId = setInterval(() => {
+        captureAndAnalyzeImage();
+      }, captureInterval);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isAnalyzing, captureInterval]);
+
+  const handleIntervalChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    setCaptureInterval(Number(event.target.value));
   };
 
   return (
@@ -100,13 +97,19 @@ const Camera: React.FC = () => {
         <Button onClick={stopCamera} mr={2} isDisabled={!stream}>Stop Camera</Button>
         <Button onClick={startAnalysis} mr={2} isDisabled={!stream || isAnalyzing}>Start Analysis</Button>
         <Button onClick={stopAnalysis} isDisabled={!isAnalyzing}>Stop Analysis</Button>
-         <Button onClick={stopSpeaking} colorScheme="red">Stop Speaking</Button>
+        <Button onClick={stopSpeaking} colorScheme="red">Stop Speaking</Button>
       </Box>
-        <Select onChange={handleIntervalChange} value={captureInterval}>
+      <Select onChange={handleIntervalChange} value={captureInterval}>
         <option value={3000}>Every 3 seconds</option>
         <option value={5000}>Every 5 seconds</option>
         <option value={10000}>Every 10 seconds</option>
       </Select>
+      {analysisResult && (
+        <Box mt={4}>
+          <Text fontWeight="bold">Analysis Result:</Text>
+          <Text>{analysisResult}</Text>
+        </Box>
+      )}
     </VStack>
   );
 };

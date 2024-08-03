@@ -3,7 +3,7 @@ import { VertexAI } from '@google-cloud/vertexai';
 
 const PROJECT_ID = process.env.GCP_PROJECT_ID;
 const LOCATION = 'us-central1';
-const MODEL_NAME = 'gemini-1.5-pro-vision';
+const MODEL_NAME = 'gemini-1.0-pro-vision';
 
 if (!PROJECT_ID) {
   throw new Error("GCP_PROJECT_ID is not set");
@@ -15,11 +15,21 @@ const model = vertexAi.preview.getGenerativeModel({
 });
 
 const createPrompt = (previousAnalysis: string | null) => {
+if (previousAnalysis === null) {
+    return `
+画像の主要素と即時の危険を3つまで、15字以内の短文で列挙してください。例：
+1. 前方に椅子あり
+2. 右側に人物接近中
+3. 床に障害物あり
+`;
+  }
   return `
 前回の分析: "${previousAnalysis || '初回分析'}"
 
-上記の前回の分析と比較して、現在の画像の主要な変更点や新しい障害物、危険要素のみを簡潔に説明してください。変更がない場合は「変更なし」と回答してください。回答は2-3の短い日本語の文で、シンプルで直接的な表現を使用してください。
-分析例：1椅子に座っている男がいます。2男が立ち上がりました。3男がいなくなりました。
+現在の画像で新たに発生した変化や危険を3つまで、15字以内の短文で列挙してください。変化がない場合は「変化なし」と回答してください。例：
+1. 人物が立ち上がる
+2. 左側から車が接近
+3. 信号が青に変わる
 `;
 };
 
