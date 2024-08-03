@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb } from '@chakra-ui/react';
+import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon } from '@chakra-ui/react';
 import { analyzeImageWithGemini } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking, setSpeechRate, setSpeechVolume } from '../utils/speechSynthesis';
 import { provideNavigation } from '../utils/navigation';
@@ -14,6 +14,8 @@ const Camera: React.FC = () => {
   const [previousAnalysis, setPreviousAnalysis] = useState<string | null>(null);
   const [isFirstAnalysis, setIsFirstAnalysis] = useState(true);
   const [settings, setSettings] = useState<UserSettings>(loadUserSettings());
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     setSettings(loadUserSettings());
@@ -66,6 +68,8 @@ const Camera: React.FC = () => {
 
   const captureAndAnalyzeImage = useCallback(async () => {
     if (videoRef.current) {
+      setIsLoading(true);
+      setError(null);
       const canvas = document.createElement('canvas');
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
@@ -86,6 +90,8 @@ const Camera: React.FC = () => {
         console.error("Error analyzing image:", error);
         setAnalysisResult("画像分析中にエラーが発生しました");
         speakText("画像分析中にエラーが発生しました");
+      } finally{
+        setIsLoading(false);
       }
     }
   }, [isFirstAnalysis, previousAnalysis]);
@@ -111,12 +117,19 @@ const Camera: React.FC = () => {
         <video ref={videoRef} autoPlay playsInline />
       </AspectRatio>
       <Box>
-        <Button onClick={startCamera} mr={2} isDisabled={!!stream}>Start Camera</Button>
-        <Button onClick={stopCamera} mr={2} isDisabled={!stream}>Stop Camera</Button>
-        <Button onClick={startAnalysis} mr={2} isDisabled={!stream || isAnalyzing}>Start Analysis</Button>
-        <Button onClick={stopAnalysis} isDisabled={!isAnalyzing}>Stop Analysis</Button>
-        <Button onClick={stopSpeaking} colorScheme="red">Stop Speaking</Button>
+        <Button onClick={startCamera} mr={2} isDisabled={!!stream || isLoading}>カメラ開始</Button>
+        <Button onClick={stopCamera} mr={2} isDisabled={!stream || isLoading}>カメラ停止</Button>
+        <Button onClick={startAnalysis} mr={2} isDisabled={!stream || isAnalyzing || isLoading}>分析開始</Button>
+        <Button onClick={stopAnalysis} isDisabled={!isAnalyzing || isLoading}>分析停止</Button>
+        <Button onClick={stopSpeaking} colorScheme="red" isDisabled={isLoading}>読み上げ停止</Button>
       </Box>
+      {isLoading && <Spinner />}
+      {error && (
+        <Alert status="error">
+          <AlertIcon />
+          {error}
+        </Alert>
+      )}
       {analysisResult && (
         <Box mt={4}>
           <Text fontWeight="bold">Analysis Result:</Text>

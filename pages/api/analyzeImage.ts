@@ -3,7 +3,7 @@ import { VertexAI } from '@google-cloud/vertexai';
 
 const PROJECT_ID = process.env.GCP_PROJECT_ID;
 const LOCATION = 'us-central1';
-const MODEL_NAME = 'gemini-1.5-pro-preview-0409';
+const MODEL_NAME = 'gemini-1.0-pro-vision';
 
 if (!PROJECT_ID) {
   throw new Error("GCP_PROJECT_ID is not set");
