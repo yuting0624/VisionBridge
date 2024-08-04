@@ -1,5 +1,5 @@
 import type { GetStaticProps, NextPage } from 'next'
-import { Box, VStack, Heading, Flex, Container, useColorModeValue, Grid, GridItem, Button, useToast } from '@chakra-ui/react'
+import { Box, VStack, Heading, Flex, Container, useColorModeValue, Grid, GridItem, Button, useToast, Image } from '@chakra-ui/react'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 import { FaMicrophone, FaVolumeUp, FaMapMarkerAlt } from 'react-icons/fa'
@@ -21,7 +21,6 @@ const Home: NextPage = () => {
   }, [t])
 
   const handleVoiceInput = useCallback(() => {
-    // 音声入力の実装（Web Speech APIを使用）
     if ('webkitSpeechRecognition' in window) {
       const recognition = new (window as any).webkitSpeechRecognition()
       recognition.lang = 'ja-JP'
@@ -96,6 +95,7 @@ const Home: NextPage = () => {
         boxShadow="sm"
       >
         <Flex align="center" mr={5}>
+          <Image src="/images/logo.png" alt="VisionBridge Logo" boxSize="80px" mr={0} />
           <Heading as="h1" size="lg" letterSpacing={'tighter'}>
             {t('title')}
           </Heading>
