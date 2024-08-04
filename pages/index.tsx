@@ -1,7 +1,8 @@
 import type { GetStaticProps, NextPage } from 'next'
-import { Box, VStack, Heading, Flex, Container, useColorModeValue } from '@chakra-ui/react'
+import { Box, VStack, Heading, Flex, Container, useColorModeValue, Grid, GridItem, Button } from '@chakra-ui/react'
 import { useTranslation } from 'next-i18next'
 import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
+import { FaMicrophone, FaVolumeUp, FaMapMarkerAlt } from 'react-icons/fa'
 import Camera from '../components/Camera'
 import ColorModeToggle from '../components/ColorModeToggle'
 import LanguageSwitch from '../components/LanguageSwitch'
@@ -47,6 +48,24 @@ const Home: NextPage = () => {
           >
             <Camera />
           </Box>
+          
+          <Grid templateColumns="repeat(3, 1fr)" gap={6}>
+            <GridItem>
+              <Button leftIcon={<FaVolumeUp />} colorScheme="blue" width="100%">
+                {t('audioGuide')}
+              </Button>
+            </GridItem>
+            <GridItem>
+              <Button leftIcon={<FaMicrophone />} colorScheme="green" width="100%">
+                {t('voiceInput')}
+              </Button>
+            </GridItem>
+            <GridItem>
+              <Button leftIcon={<FaMapMarkerAlt />} colorScheme="purple" width="100%">
+                {t('getLocation')}
+              </Button>
+            </GridItem>
+          </Grid>
         </VStack>
       </Container>
     </Box>
