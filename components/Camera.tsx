@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon, VisuallyHidden } from '@chakra-ui/react';
+import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon, VisuallyHidden, Radio, RadioGroup } from '@chakra-ui/react';
 import { analyzeImageWithGemini } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking, setSpeechRate, setSpeechVolume } from '../utils/speechSynthesis';
 import { provideNavigation, provideDetailedNavigation, updateCurrentPosition } from '../utils/navigation';
@@ -7,6 +7,8 @@ import { initializeSpeechRecognition, addVoiceCommand } from '../utils/speechRec
 import { UserSettings, saveUserSettings, loadUserSettings } from '../utils/userSettings';
 import { resizeAndCompressImage } from '../utils/imageProcessing';
 import { debounce } from '../utils/apiHelper';
+
+type AnalysisMode = 'normal' | 'person' | 'text';
 
 const Camera: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -19,6 +21,7 @@ const Camera: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [navigationInfo, setNavigationInfo] = useState<string | null>(null);
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('normal');
 
   const handleNavigation = useCallback(() => {
     if (analysisResult) {
@@ -90,30 +93,35 @@ const Camera: React.FC = () => {
   };
 
   const debouncedAnalyzeImage = useCallback(
-  debounce(async (imageDataUrl: string) => {
+  debounce(async (imageDataUrl: string, mode: AnalysisMode) => {
     try {
-      const result = await analyzeImageWithGemini(imageDataUrl, isFirstAnalysis ? null : previousAnalysis);
+      const result = await analyzeImageWithGemini(imageDataUrl, mode, isFirstAnalysis ? null : previousAnalysis);
       setAnalysisResult(result);
-       if (isFirstAnalysis || (result !== "変更なし" && result !== "")) {
-          speakText(result);
-          provideDetailedNavigation(result);
-        }
-        
-        setPreviousAnalysis(result);
-        setIsFirstAnalysis(false);
+      if (isFirstAnalysis || (result !== "変更なし" && result !== "")) {
+        speakText(result);
+        provideDetailedNavigation(result);
+      }
+      
+      setPreviousAnalysis(result);
+      setIsFirstAnalysis(false);
     } catch (error) {
       console.error("Error analyzing image:", error);
-        setError("画像分析中にエラーが発生しました");
-        speakText("画像分析中にエラーが発生しました");
-      } finally {
-        setIsLoading(false);
+      setError("画像分析中にエラーが発生しました");
+      speakText("画像分析中にエラーが発生しました");
+    } finally {
+      setIsLoading(false);
     }
   }, 300),
   [isFirstAnalysis, previousAnalysis]
 );
 
-  const captureAndAnalyzeImage = useCallback(async () => {
-     if (videoRef.current) {
+const handleModeChange = (newMode: AnalysisMode) => {
+    setAnalysisMode(newMode);
+    // モード変更時に必要な処理があれば追加
+  };
+
+const captureAndAnalyzeImage = useCallback(async () => {
+  if (videoRef.current) {
     setIsLoading(true);
     setError(null);
     const canvas = document.createElement('canvas');
@@ -124,15 +132,15 @@ const Camera: React.FC = () => {
     
     try {
       const compressedImageDataUrl = await resizeAndCompressImage(imageDataUrl);
-      await debouncedAnalyzeImage(compressedImageDataUrl);
+      await debouncedAnalyzeImage(compressedImageDataUrl, analysisMode);
        
-      } catch (error) {
-        console.error("Error capturing or analyzing image:", error);
-        setError("画像のキャプチャまたは分析中にエラーが発生しました");
-        setIsLoading(false);
-      }
+    } catch (error) {
+      console.error("Error capturing or analyzing image:", error);
+      setError("画像のキャプチャまたは分析中にエラーが発生しました");
+      setIsLoading(false);
     }
-  }, [debouncedAnalyzeImage]);
+  }
+}, [debouncedAnalyzeImage, analysisMode]);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -151,10 +159,23 @@ const Camera: React.FC = () => {
 
   return (
      <VStack spacing={4} align="stretch">
+      // Camera.tsxの既存のJSX内に追加
+<Text mt={4} fontWeight="bold">現在のモード: {
+  analysisMode === 'normal' ? '通常' :
+  analysisMode === 'person' ? '人物認識' :
+  '文字認識'
+}</Text>
       <AspectRatio maxW="100%" ratio={16/9}>
         <video ref={videoRef} autoPlay playsInline aria-label="カメラビュー" />
       </AspectRatio>
       <Box>
+        <RadioGroup onChange={(value) => handleModeChange(value as AnalysisMode)} value={analysisMode}>
+        <VStack align="start">
+          <Radio value="normal">通常モード</Radio>
+          <Radio value="person">人物認識モード</Radio>
+          <Radio value="text">テキスト認識モード</Radio>
+          </VStack>
+          </RadioGroup>
         <Button onClick={startCamera} mr={2} isDisabled={!!stream || isLoading} aria-label="カメラ開始">
           カメラ開始
         </Button>
