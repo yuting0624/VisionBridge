@@ -1,9 +1,20 @@
 {
   "title": "VisionBridge",
-  "startCamera": "カメラ開始",
-  "stopCamera": "カメラ停止",
-  "startAnalysis": "分析開始",
-  "stopAnalysis": "分析停止",
-  "stopSpeaking": "読み上げ停止",
-  "offlineMessage": "現在オフラインです。一部の機能が利用できない可能性があります。"
+  "startCamera": "Start Camera",
+  "stopCamera": "Stop Camera",
+  "startAnalysis": "Start Analysis",
+  "stopAnalysis": "Stop Analysis",
+  "stopSpeaking": "Stop Speaking",
+  "audioGuide": "Audio Guide",
+  "voiceInput": "Voice Input",
+  "getLocation": "Get Location",
+  "audioGuideText": "Welcome to VisionBridge. This app is designed for visually impaired individuals. It analyzes the surroundings using the camera and provides feedback through audio.",
+  "offlineMessage": "You are currently offline. Some features may not be available.",
+  "navigationInfo": "Navigation",
+  "loading": "Loading",
+  "AnalysisResult": "Analysis Result",
+  "currentMode": "Current Mode",
+  "defaultMode": "Default Mode",
+  "personMode": "Person Mode",
+  "textMode": "Text Mode"
 }

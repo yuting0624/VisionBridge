@@ -5,5 +5,17 @@
   "startAnalysis": "分析開始",
   "stopAnalysis": "分析停止",
   "stopSpeaking": "読み上げ停止",
-  "offlineMessage": "現在オフラインです。一部の機能が利用できない可能性があります。"
+  "audioGuide": "音声ガイド",
+  "voiceInput": "音声入力",
+  "getLocation": "現在地取得",
+  "audioGuideText": "VisionBridgeへようこそ。このアプリは視覚障害者の方々のために設計されました。カメラを使って周囲の状況を分析し、音声でフィードバックを提供します。",
+  "offlineMessage": "現在オフラインです。一部の機能が利用できない可能性があります。",
+  "navigationInfo": "ナビ情報",
+  "loading": "ロード中",
+  "AnalysisResult": "分析結果",
+  "currentMode": "現在モード",
+  "defaultMode": "通常モード",
+  "personMode": "人物認識モード",
+  "textMode": "テキスト認識モード"
+
 }

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon, VisuallyHidden, Radio, RadioGroup } from '@chakra-ui/react';
+import { Box, Button, VStack, HStack, Container, Center, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon, VisuallyHidden, Radio, RadioGroup } from '@chakra-ui/react';
 import { analyzeImageWithGemini } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking, setSpeechRate, setSpeechVolume } from '../utils/speechSynthesis';
 import { provideNavigation, provideDetailedNavigation, updateCurrentPosition } from '../utils/navigation';
@@ -7,10 +7,12 @@ import { initializeSpeechRecognition, addVoiceCommand } from '../utils/speechRec
 import { UserSettings, saveUserSettings, loadUserSettings } from '../utils/userSettings';
 import { resizeAndCompressImage } from '../utils/imageProcessing';
 import { debounce } from '../utils/apiHelper';
+import { useTranslation } from 'next-i18next'
 
 type AnalysisMode = 'normal' | 'person' | 'text';
 
 const Camera: React.FC = () => {
+  const { t } = useTranslation('common')
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -158,103 +160,115 @@ const captureAndAnalyzeImage = useCallback(async () => {
 
 
   return (
-     <VStack spacing={4} align="stretch">
-      // Camera.tsxの既存のJSX内に追加
-<Text mt={4} fontWeight="bold">現在のモード: {
-  analysisMode === 'normal' ? '通常' :
-  analysisMode === 'person' ? '人物認識' :
-  '文字認識'
-}</Text>
-      <AspectRatio maxW="100%" ratio={16/9}>
-        <video ref={videoRef} autoPlay playsInline aria-label="カメラビュー" />
-      </AspectRatio>
-      <Box>
+     <Container maxW="container.xl" centerContent p={4}>
+      <VStack spacing={4} align="stretch" width="100%">
+        <Text mt={4} fontWeight="bold" textAlign="center">{t('currentMode')}: {
+          analysisMode === 'normal' ? '通常' :
+          analysisMode === 'person' ? '人物認識' :
+          '文字認識'
+        }</Text>
+        
+        <AspectRatio maxW="100%" ratio={16/9}>
+          <video ref={videoRef} autoPlay playsInline aria-label="カメラビュー" />
+        </AspectRatio>
+        
         <RadioGroup onChange={(value) => handleModeChange(value as AnalysisMode)} value={analysisMode}>
-        <VStack align="start">
-          <Radio value="normal">通常モード</Radio>
-          <Radio value="person">人物認識モード</Radio>
-          <Radio value="text">テキスト認識モード</Radio>
-          </VStack>
-          </RadioGroup>
-        <Button onClick={startCamera} mr={2} isDisabled={!!stream || isLoading} aria-label="カメラ開始">
-          カメラ開始
+          <HStack justify="center" spacing={4}>
+            <Radio value="normal">{t('defaultMode')}</Radio>
+            <Radio value="person">{t('personMode')}</Radio>
+            <Radio value="text">{t('textMode')}</Radio>
+          </HStack>
+        </RadioGroup>
+        
+        <HStack justify="center" wrap="wrap" spacing={2}>
+          <Button onClick={startCamera} isDisabled={!!stream || isLoading} aria-label="カメラ開始">
+            {t('startCamera')}
+          </Button>
+          <Button onClick={stopCamera} isDisabled={!stream || isLoading} aria-label="カメラ停止">
+            {t('stopCamera')}
+          </Button>
+          <Button onClick={startAnalysis} isDisabled={!stream || isAnalyzing || isLoading} aria-label="分析開始">
+            {t('startAnalysis')}
+          </Button>
+          <Button onClick={stopAnalysis} isDisabled={!isAnalyzing || isLoading} aria-label="分析停止">
+            {t('stopAnalysis')}
+          </Button>
+          <Button onClick={stopSpeaking} colorScheme="red" isDisabled={isLoading} aria-label="読み上げ停止">
+            {t('stopSpeaking')}
+          </Button>
+        </HStack>
+        
+        {isLoading && (
+          <Center aria-live="polite" aria-busy="true">
+            <Spinner />
+            <VisuallyHidden>{t('loading')}</VisuallyHidden>
+          </Center>
+        )}
+        
+        {error && (
+          <Alert status="error" aria-live="assertive">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
+        
+        {analysisResult && (
+          <Box mt={4} p={4} borderWidth={1} borderRadius="md" aria-live="polite">
+            <Text fontWeight="bold">{t('AnalysisResult')}:</Text>
+            <Text>{analysisResult}</Text>
+          </Box>
+        )}
+        
+        <Text>Capture Interval</Text>
+        <Select
+          value={settings.captureInterval}
+          onChange={(e) => handleSettingsChange('captureInterval', Number(e.target.value))}
+        >
+          <option value={3000}>Every 3 seconds</option>
+          <option value={5000}>Every 5 seconds</option>
+          <option value={10000}>Every 10 seconds</option>
+        </Select>
+        
+        <Text>Speech Rate</Text>
+        <Slider
+          min={0.5}
+          max={2}
+          step={0.1}
+          value={settings.speechRate}
+          onChange={(v) => handleSettingsChange('speechRate', v)}
+        >
+          <SliderTrack>
+            <SliderFilledTrack />
+          </SliderTrack>
+          <SliderThumb />
+        </Slider>
+        
+        <Text>Speech Volume</Text>
+        <Slider
+          min={0}
+          max={1}
+          step={0.1}
+          value={settings.speechVolume}
+          onChange={(v) => handleSettingsChange('speechVolume', v)}
+        >
+          <SliderTrack>
+            <SliderFilledTrack />
+          </SliderTrack>
+          <SliderThumb />
+        </Slider>
+        
+        <Button onClick={handleNavigation} isDisabled={!analysisResult || isLoading}>
+          {t('navigationInfo')}
         </Button>
-        <Button onClick={stopCamera} mr={2} isDisabled={!stream || isLoading} aria-label="カメラ停止">
-          カメラ停止
-        </Button>
-        <Button onClick={startAnalysis} mr={2} isDisabled={!stream || isAnalyzing || isLoading} aria-label="分析開始">
-          分析開始
-        </Button>
-        <Button onClick={stopAnalysis} isDisabled={!isAnalyzing || isLoading} aria-label="分析停止">
-          分析停止
-        </Button>
-        <Button onClick={stopSpeaking} colorScheme="red" isDisabled={isLoading} aria-label="読み上げ停止">
-          読み上げ停止
-        </Button>
-      </Box>
-      {isLoading && (
-        <Box aria-live="polite" aria-busy="true">
-          <Spinner />
-          <VisuallyHidden>読み込み中</VisuallyHidden>
-        </Box>
-      )}
-      {error && (
-        <Alert status="error" aria-live="assertive">
-          <AlertIcon />
-          {error}
-        </Alert>
-      )}
-      {analysisResult && (
-        <Box mt={4} p={4} borderWidth={1} borderRadius="md" aria-live="polite">
-          <Text fontWeight="bold">分析結果:</Text>
-          <Text>{analysisResult}</Text>
-        </Box>
-      )}
-      <Text>Capture Interval</Text>
-      <Select
-        value={settings.captureInterval}
-        onChange={(e) => handleSettingsChange('captureInterval', Number(e.target.value))}
-      >
-        <option value={3000}>Every 3 seconds</option>
-        <option value={5000}>Every 5 seconds</option>
-        <option value={10000}>Every 10 seconds</option>
-      </Select>
-      <Text>Speech Rate</Text>
-      <Slider
-        min={0.5}
-        max={2}
-        step={0.1}
-        value={settings.speechRate}
-        onChange={(v) => handleSettingsChange('speechRate', v)}
-      >
-        <SliderTrack>
-          <SliderFilledTrack />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
-      <Text>Speech Volume</Text>
-      <Slider
-        min={0}
-        max={1}
-        step={0.1}
-        value={settings.speechVolume}
-        onChange={(v) => handleSettingsChange('speechVolume', v)}
-      >
-        <SliderTrack>
-          <SliderFilledTrack />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
-      <Button onClick={handleNavigation} isDisabled={!analysisResult || isLoading}>
-        詳細ナビ
-      </Button>
-       {navigationInfo && (
-        <Box mt={4} p={4} borderWidth={1} borderRadius="md">
-          <Text fontWeight="bold">ナビゲーション情報:</Text>
-          <Text>{navigationInfo}</Text>
-        </Box>
-      )}
-    </VStack>
+        
+        {navigationInfo && (
+          <Box mt={4} p={4} borderWidth={1} borderRadius="md">
+            <Text fontWeight="bold">{t('navigationInfo')}:</Text>
+            <Text>{navigationInfo}</Text>
+          </Box>
+        )}
+      </VStack>
+    </Container>
   );
 };
 
