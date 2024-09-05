@@ -91,7 +91,7 @@ const Camera: React.FC = () => {
   const analyzeVideo = async (videoBlob: Blob) => {
     try {
       const base64 = await blobToBase64(videoBlob);
-      const response = await analyzeImageWithAI(base64);
+      const response = await analyzeImageWithAI(base64, 'video', null);
       console.log("Video analysis result:", response);
       // 結果の処理
     } catch (error) {
