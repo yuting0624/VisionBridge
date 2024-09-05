@@ -21,11 +21,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const generativeModel = vertexAi.preview.getGenerativeModel({
         model: model,
-        generation_config: {
-          max_output_tokens: 2048,
+        generationConfig: {
+          maxOutputTokens: 2048,
           temperature: 0.4,
-          top_p: 1,
-          top_k: 32,
+          topP: 1,
+          topK: 32,
         },
       });
 
@@ -33,9 +33,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (typeof imageData === 'string' && imageData.startsWith('data:image')) {
         const base64Data = imageData.split(',')[1];
         imagePart = {
-          inline_data: {
+          inlineData: {  // ここを修正
             data: base64Data,
-            mime_type: 'image/jpeg',
+            mimeType: 'image/jpeg',  // ここも修正
           },
         };
       } else if (typeof imageData === 'object') {
@@ -54,12 +54,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       const response = await result.response;
-      const generatedText = response.candidates[0].content.parts[0].text;
+      const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No text generated';
 
       res.status(200).json({ analysis: generatedText });
     } catch (error) {
       console.error('Error analyzing image with Vertex AI Gemini:', error);
-      res.status(500).json({ error: 'Image analysis failed', details: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      res.status(500).json({ error: 'Image analysis failed', details: errorMessage });
     }
   } else {
     res.setHeader('Allow', ['POST']);

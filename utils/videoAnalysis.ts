@@ -1,4 +1,4 @@
-import { VideoIntelligenceServiceClient } from '@google-cloud/video-intelligence';
+import { VideoIntelligenceServiceClient, protos } from '@google-cloud/video-intelligence';
 import { VertexAI } from '@google-cloud/vertexai';
 
 const client = new VideoIntelligenceServiceClient({
@@ -24,7 +24,12 @@ async function retryWithBackoff(operation: () => Promise<any>, maxRetries = 3, d
 export async function analyzeVideoStream(videoStream: Buffer) {
   const request = {
     inputContent: videoStream.toString('base64'),
-    features: ['OBJECT_TRACKING', 'LABEL_DETECTION', 'SHOT_CHANGE_DETECTION', 'PERSON_DETECTION'],
+    features: [
+      protos.google.cloud.videointelligence.v1.Feature.OBJECT_TRACKING,
+      protos.google.cloud.videointelligence.v1.Feature.LABEL_DETECTION,
+      protos.google.cloud.videointelligence.v1.Feature.SHOT_CHANGE_DETECTION,
+      protos.google.cloud.videointelligence.v1.Feature.PERSON_DETECTION,
+    ],
   };
 
   try {
@@ -43,7 +48,7 @@ export async function analyzeVideoStream(videoStream: Buffer) {
   }
 }
 
-export async function analyzeVideoWithGemini(videoData: Buffer, previousAnalysis: string): Promise<string> {
+export async function analyzeVideoWithGemini(videoData: Buffer, previousAnalysis: string = ''): Promise<string> {
   try {
     const annotations = await retryWithBackoff(() => analyzeVideoStream(videoData));
     const analysisResult = JSON.stringify(annotations, null, 2);
@@ -64,10 +69,10 @@ export async function analyzeVideoWithGemini(videoData: Buffer, previousAnalysis
 
     const generativeModel = vertexai.preview.getGenerativeModel({
       model: model,
-      generation_config: {
-        max_output_tokens: 2048,
+      generationConfig: {
+        maxOutputTokens: 2048,
         temperature: 0.9,
-        top_p: 1
+        topP: 1
       },
     });
 
@@ -76,10 +81,11 @@ export async function analyzeVideoWithGemini(videoData: Buffer, previousAnalysis
     });
     
     const response = await result.response;
-    return response.candidates[0].content.parts[0].text;
+    const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No text generated';
+    return generatedText;
 
   } catch (error) {
     console.error('Error in video analysis with Gemini:', error);
-    throw new Error(`Video analysis with Gemini failed: ${error.message}`);
+    throw new Error(`Video analysis with Gemini failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }

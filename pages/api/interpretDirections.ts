@@ -17,11 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const generativeModel = vertexAi.preview.getGenerativeModel({
         model: model,
-        generation_config: {
-          max_output_tokens: 2048,
+        generationConfig: {  // ここを変更
+          maxOutputTokens: 2048,  // ここも変更
           temperature: 0.2,
-          top_p: 1,
-          top_k: 32,
+          topP: 1,  // ここも変更
+          topK: 32,  // ここも変更
         },
       });
 
@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       const response = await result.response;
-      const interpretation = response.candidates[0].content.parts[0].text;
+      const interpretation = response.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No text generated';
 
       res.status(200).json({ interpretation });
     } catch (error) {

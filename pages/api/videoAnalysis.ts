@@ -22,12 +22,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const videoBuffer = await fs.readFile(videoFile.filepath);
-      const result = await analyzeVideoWithGemini(videoBuffer, null);
+      const result = await analyzeVideoWithGemini(videoBuffer, '');
       await fs.unlink(videoFile.filepath); // 一時ファイルを削除
       res.status(200).json({ analysis: result });
     } catch (error) {
       console.error('Error processing video:', error);
-      res.status(500).json({ error: 'Video analysis failed', details: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      res.status(500).json({ error: 'Video analysis failed', details: errorMessage });
     }
   } else {
     res.setHeader('Allow', ['POST']);

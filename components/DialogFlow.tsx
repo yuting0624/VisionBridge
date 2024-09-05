@@ -15,6 +15,11 @@ const useDialogFlow = () => {
   }, []);
 
   const detectIntent = async (query: string) => {
+    if (!projectId || !location || !agentId || !sessionId) {
+      console.error('必要な環境変数が設定されていません');
+      return null;
+    }
+
     const sessionPath = sessionsClient.projectLocationAgentSessionPath(
       projectId,
       location,
@@ -51,7 +56,7 @@ export const VoiceCommandProcessor: React.FC = () => {
   const processVoiceCommand = async (command: string) => {
     try {
       const result = await detectIntent(command);
-      if (result.intent) {
+      if (result && result.intent) {
         switch (result.intent.displayName) {
           case 'StartNavigation':
             // ナビゲーション開始ロジック
@@ -68,6 +73,8 @@ export const VoiceCommandProcessor: React.FC = () => {
           default:
             console.log('Unknown intent:', result.intent.displayName);
         }
+      } else {
+        console.log('No intent detected or result is null');
       }
     } catch (error) {
       console.error('Error processing voice command:', error);

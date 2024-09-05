@@ -4,6 +4,7 @@ const nextConfig = {
   reactStrictMode: true,
   i18n,
   transpilePackages: ['@google-cloud/vertexai'],
+  output: 'standalone',
 }
 
 const withPWA = require('next-pwa')({
