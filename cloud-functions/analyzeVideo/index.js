@@ -1,6 +1,9 @@
 const { VertexAI } = require('@google-cloud/vertexai');
 const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence');
-const cors = require('cors')({origin: true});
+const cors = require('cors')({
+  origin: true,
+  credentials: true  
+});
 const projectId = process.env.GCP_PROJECT_ID;
 const location = 'asia-northeast1';
 const model = 'gemini-1.5-flash-001';
@@ -13,8 +16,18 @@ const videoClient = new VideoIntelligenceServiceClient();
 const vertexAi = new VertexAI({ project: projectId, location: location });
 
 async function analyzeVideoStream(videoData) {
+  let inputContent;
+  if (typeof videoData === 'string') {
+    inputContent = videoData.split(',')[1]; 
+  } else if (videoData instanceof Buffer) {
+    // Bufferオブジェクトの場合
+    inputContent = videoData.toString('base64');
+  } else {
+    throw new Error('Unsupported video data format');
+  }
+
   const request = {
-    inputContent: videoData.split(',')[1], // Base64データの部分のみを抽出
+    inputContent: inputContent,
     features: ['OBJECT_TRACKING', 'LABEL_DETECTION', 'SHOT_CHANGE_DETECTION', 'PERSON_DETECTION'],
   };
 
@@ -36,6 +49,16 @@ async function analyzeVideoStream(videoData) {
 
 exports.analyzeVideo = (req, res) => {
   return cors(req, res, async () => {
+    if (req.method === 'OPTIONS') {
+      // プリフライトリクエストの処理
+      res.set('Access-Control-Allow-Origin', 'http://localhost:3000');
+      res.set('Access-Control-Allow-Methods', 'POST');
+      res.set('Access-Control-Allow-Headers', 'Content-Type');
+      res.set('Access-Control-Allow-Credentials', 'true');
+      res.status(204).send('');
+      return;
+    }
+
     if (req.method !== 'POST') {
       res.status(405).send('Method Not Allowed');
       return;
@@ -48,7 +71,9 @@ exports.analyzeVideo = (req, res) => {
         return res.status(400).json({ error: 'No video data provided' });
       }
 
+      console.log('Received video data type:', typeof videoData);
       console.log('Received video data length:', videoData.length);
+
       const analysisResult = await analyzeVideoStream(videoData);
 
       const prompt = `

@@ -3,7 +3,8 @@ export async function analyzeImageWithAI(data: string | Blob, analysisMode: 'nor
     let result;
     if (analysisMode === 'video') {
       if (!(data instanceof Blob)) {
-        throw new Error('動画データはBlobである必要があります');
+        console.error('Received data type:', typeof data);
+        throw new Error(`動画データはBlobである必要があります。受け取ったデータ型: ${typeof data}`);
       }
       
       // Blobをbase64エンコードされた文字列に変換
@@ -21,6 +22,7 @@ export async function analyzeImageWithAI(data: string | Blob, analysisMode: 'nor
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ videoData: base64data }),
+        credentials: 'include', 
       });
       
       console.log('Response status:', response.status);
@@ -51,7 +53,7 @@ export async function analyzeImageWithAI(data: string | Blob, analysisMode: 'nor
     return result;
   } catch (error) {
     console.error("画像/動画の分析中にエラーが発生しました:", error);
-    throw new Error(`分析に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+    throw error; 
   }
 }
 

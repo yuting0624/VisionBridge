@@ -16,6 +16,9 @@
   "currentMode": "現在モード",
   "defaultMode": "通常モード",
   "personMode": "人物認識モード",
-  "textMode": "テキスト認識モード"
-
+  "textMode": "テキスト認識モード",
+  "switchToImageMode": "画像モードに切り替え",
+  "switchToVideoMode": "動画モードに切り替え",
+  "ImageAnalysisMode": "画像分析モード",
+  "VideoAnalysisMode": "動画分析モード"
 }

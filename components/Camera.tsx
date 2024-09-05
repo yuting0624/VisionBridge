@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden } from '@chakra-ui/react';
+import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden, useColorMode, Icon } from '@chakra-ui/react';
+import { FaImage, FaVideo } from 'react-icons/fa';
 import { analyzeImageWithAI } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
@@ -90,12 +91,16 @@ const Camera: React.FC = () => {
 
   const analyzeVideo = async (videoBlob: Blob) => {
     try {
-      const base64 = await blobToBase64(videoBlob);
-      const response = await analyzeImageWithAI(base64, 'video', null);
+      setIsLoading(true); // 動画分析開始時にローディング状態をtrueに設定
+      const response = await analyzeImageWithAI(videoBlob, 'video', null);
       console.log("Video analysis result:", response);
-      // 結果の処理
+      setAnalysisResult(response); // 分析結果を状態に保存
+      speakText(response); // 結果を音声で読み上げる
     } catch (error) {
       console.error("Error analyzing video:", error);
+      setError(t('videoAnalysisError'));
+    } finally {
+      setIsLoading(false); // 動画分析終了時にローディング状態をfalseに設定
     }
   };
 
@@ -113,21 +118,25 @@ const Camera: React.FC = () => {
       setIsLoading(true);
       setError(null);
       const context = canvasRef.current.getContext('2d');
-      context?.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
-      const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
-      
-      try {
-        const result = await analyzeImageWithAI(imageDataUrl, 'normal', null);
-        setAnalysisResult(result);
-        speakText(result);
-      } catch (error) {
-        console.error("Error analyzing image:", error);
-        setError(t('imageAnalysisError'));
-      } finally {
-        setIsLoading(false);
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
+        
+        try {
+          const result = await analyzeImageWithAI(imageDataUrl, 'normal', null);
+          setAnalysisResult(result);
+          speakText(result);
+        } catch (error) {
+          console.error("Error analyzing image:", error);
+          setError(t('imageAnalysisError'));
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
@@ -147,6 +156,8 @@ const Camera: React.FC = () => {
     setIsVideoMode(!isVideoMode);
     setIsAnalyzing(false);
   };
+
+  const { colorMode } = useColorMode();
 
   return (
     <Container maxW="container.xl" centerContent p={4}>
@@ -172,14 +183,16 @@ const Camera: React.FC = () => {
           />
           <canvas
             ref={canvasRef}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-            }}
+            style={{ display: 'none' }}
           />
+          <Box position="absolute" top={2} left={2} bg={colorMode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'} p={2} borderRadius="md">
+            <Icon as={isVideoMode ? FaVideo : FaImage} color={colorMode === 'dark' ? 'white' : 'black'} />
+          </Box>
+          {(isAnalyzing || isLoading) && (
+            <Box position="absolute" top={2} right={2} bg={colorMode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'} p={2} borderRadius="md">
+              <Spinner size="sm" color={colorMode === 'dark' ? 'white' : 'black'} />
+            </Box>
+          )}
         </Box>
         
         <HStack justify="center" wrap="wrap" spacing={2}>

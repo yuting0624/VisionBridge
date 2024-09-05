@@ -16,5 +16,9 @@
   "currentMode": "Current Mode",
   "defaultMode": "Default Mode",
   "personMode": "Person Mode",
-  "textMode": "Text Mode"
+  "textMode": "Text Mode",
+  "switchToImageMode": "Switch to Image Mode",
+  "switchToVideoMode": "Switch to Video Mode",
+  "ImageAnalysisMode": "Image Analysis Mode",
+  "VideoAnalysisMode": "Video Analysis Mode"
 }
