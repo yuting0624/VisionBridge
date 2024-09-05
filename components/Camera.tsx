@@ -1,66 +1,29 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Button, VStack, HStack, Container, Center, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon, VisuallyHidden, Radio, RadioGroup } from '@chakra-ui/react';
-import { analyzeImageWithGemini } from '../utils/imageAnalysis';
-import { speakText, stopSpeaking, setSpeechRate, setSpeechVolume } from '../utils/speechSynthesis';
-import { provideNavigation, provideDetailedNavigation, updateCurrentPosition } from '../utils/navigation';
-import { initializeSpeechRecognition, addVoiceCommand } from '../utils/speechRecognition';
-import { UserSettings, saveUserSettings, loadUserSettings } from '../utils/userSettings';
-import { resizeAndCompressImage } from '../utils/imageProcessing';
-import { debounce } from '../utils/apiHelper';
+import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden } from '@chakra-ui/react';
+import { analyzeImageWithAI } from '../utils/imageAnalysis';
+import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
-
-type AnalysisMode = 'normal' | 'person' | 'text';
+import Navigation from './Navigation';
 
 const Camera: React.FC = () => {
   const { t } = useTranslation('common')
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isVideoMode, setIsVideoMode] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
-  const [previousAnalysis, setPreviousAnalysis] = useState<string | null>(null);
-  const [isFirstAnalysis, setIsFirstAnalysis] = useState(true);
-  const [settings, setSettings] = useState<UserSettings>(loadUserSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [navigationInfo, setNavigationInfo] = useState<string | null>(null);
-  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('normal');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
-  const handleNavigation = useCallback(() => {
-    if (analysisResult) {
-      const navigation = provideDetailedNavigation(analysisResult);
-      setNavigationInfo(navigation);
+  const toggleCamera = async () => {
+    if (stream) {
+      stopEverything();
+    } else {
+      await startCamera();
     }
-  }, [analysisResult]);
-
-  useEffect(() => {
-    // 実際の実装ではGeolocation APIを使用
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        updateCurrentPosition(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => console.error("Geolocation error:", error),
-      { enableHighAccuracy: true }
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
-  
-  useEffect(() => {
-    setSettings(loadUserSettings());
-    initializeSpeechRecognition();
-    addVoiceCommand('開始', startAnalysis);
-    addVoiceCommand('停止', stopAnalysis);
-    addVoiceCommand('ナビゲーション', () => provideNavigation(analysisResult || ''));
-  }, []);
-
-  useEffect(() => {
-    setSpeechRate(settings.speechRate);
-    setSpeechVolume(settings.speechVolume);
-    saveUserSettings(settings);
-  }, [settings]);
-
-  const handleSettingsChange = (key: keyof UserSettings, value: number) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const startCamera = async () => {
@@ -72,128 +35,171 @@ const Camera: React.FC = () => {
       setStream(mediaStream);
     } catch (error) {
       console.error("Error accessing camera:", error);
+      setError(t('cameraAccessError'));
     }
   };
 
-  const stopCamera = () => {
+  const stopEverything = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
-    stopAnalysis();
-  };
-
-  const startAnalysis = () => {
-    setIsAnalyzing(true);
-    setIsFirstAnalysis(true);
-  };
-
-  const stopAnalysis = () => {
     setIsAnalyzing(false);
-    setPreviousAnalysis(null);
-    setIsFirstAnalysis(true);
+    setIsVideoMode(false);
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
   };
 
-  const debouncedAnalyzeImage = useCallback(
-  debounce(async (imageDataUrl: string, mode: AnalysisMode) => {
-    try {
-      const result = await analyzeImageWithGemini(imageDataUrl, mode, isFirstAnalysis ? null : previousAnalysis);
-      setAnalysisResult(result);
-      if (isFirstAnalysis || (result !== "変更なし" && result !== "")) {
-        speakText(result);
-        provideDetailedNavigation(result);
+  const toggleAnalysis = () => {
+    if (isAnalyzing) {
+      setIsAnalyzing(false);
+      if (isVideoMode) {
+        stopVideoRecording();
       }
-      
-      setPreviousAnalysis(result);
-      setIsFirstAnalysis(false);
+    } else {
+      setIsAnalyzing(true);
+      if (isVideoMode) {
+        startVideoRecording();
+      }
+    }
+  };
+
+  const startVideoRecording = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      mediaRecorderRef.current = new MediaRecorder(videoRef.current.srcObject as MediaStream);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        analyzeVideo(blob);
+        chunksRef.current = [];
+      };
+      mediaRecorderRef.current.start();
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const analyzeVideo = async (videoBlob: Blob) => {
+    try {
+      setIsLoading(true);
+      const result = await analyzeImageWithAI(videoBlob, 'video', null);
+      setAnalysisResult(result);
+      speakText(result);
     } catch (error) {
-      console.error("Error analyzing image:", error);
-      setError("画像分析中にエラーが発生しました");
-      speakText("画像分析中にエラーが発生しました");
+      console.error("Error analyzing video:", error);
+      setError(t('videoAnalysisError'));
     } finally {
       setIsLoading(false);
     }
-  }, 300),
-  [isFirstAnalysis, previousAnalysis]
-);
-
-const handleModeChange = (newMode: AnalysisMode) => {
-    setAnalysisMode(newMode);
-    // モード変更時に必要な処理があれば追加
   };
 
-const captureAndAnalyzeImage = useCallback(async () => {
-  if (videoRef.current) {
-    setIsLoading(true);
-    setError(null);
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-    try {
-      const compressedImageDataUrl = await resizeAndCompressImage(imageDataUrl);
-      await debouncedAnalyzeImage(compressedImageDataUrl, analysisMode);
-       
-    } catch (error) {
-      console.error("Error capturing or analyzing image:", error);
-      setError("画像のキャプチャまたは分析中にエラーが発生しました");
-      setIsLoading(false);
+  const captureAndAnalyzeImage = useCallback(async () => {
+    if (videoRef.current && canvasRef.current) {
+      setIsLoading(true);
+      setError(null);
+      const context = canvasRef.current.getContext('2d');
+      context?.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
+      
+      try {
+        const result = await analyzeImageWithAI(imageDataUrl, 'normal', null);
+        setAnalysisResult(result);
+        speakText(result);
+      } catch (error) {
+        console.error("Error analyzing image:", error);
+        setError(t('imageAnalysisError'));
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }
-}, [debouncedAnalyzeImage, analysisMode]);
+  }, []);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
-    if (isAnalyzing) {
+    if (isAnalyzing && !isVideoMode) {
       intervalId = setInterval(() => {
         captureAndAnalyzeImage();
-      }, settings.captureInterval);
+      }, 5000); // 5秒ごとに分析
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isAnalyzing, settings.captureInterval, captureAndAnalyzeImage]);
+  }, [isAnalyzing, isVideoMode, captureAndAnalyzeImage]);
 
+  const toggleMode = () => {
+    setIsVideoMode(!isVideoMode);
+    setIsAnalyzing(false);
+  };
 
   return (
-     <Container maxW="container.xl" centerContent p={4}>
+    <Container maxW="container.xl" centerContent p={4}>
       <VStack spacing={4} align="stretch" width="100%">
-        <Text mt={4} fontWeight="bold" textAlign="center">{t('currentMode')}: {
-          analysisMode === 'normal' ? '通常' :
-          analysisMode === 'person' ? '人物認識' :
-          '文字認識'
-        }</Text>
+        <Text mt={4} fontWeight="bold" textAlign="center">
+          {t('currentMode')}: {isVideoMode ? t('videoAnalysisMode') : t('imageAnalysisMode')}
+        </Text>
         
-        <AspectRatio maxW="100%" ratio={16/9}>
-          <video ref={videoRef} autoPlay playsInline aria-label="カメラビュー" />
-        </AspectRatio>
-        
-        <RadioGroup onChange={(value) => handleModeChange(value as AnalysisMode)} value={analysisMode}>
-          <HStack justify="center" spacing={4}>
-            <Radio value="normal">{t('defaultMode')}</Radio>
-            <Radio value="person">{t('personMode')}</Radio>
-            <Radio value="text">{t('textMode')}</Radio>
-          </HStack>
-        </RadioGroup>
+        <Box position="relative" width="100%" paddingTop="56.25%">
+          <video
+            ref={videoRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+            autoPlay
+            playsInline
+            aria-label={t('cameraView')}
+          />
+          <canvas
+            ref={canvasRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        </Box>
         
         <HStack justify="center" wrap="wrap" spacing={2}>
-          <Button onClick={startCamera} isDisabled={!!stream || isLoading} aria-label="カメラ開始">
-            {t('startCamera')}
+          <Button 
+            onClick={toggleCamera} 
+            colorScheme={stream ? "red" : "green"}
+            aria-label={stream ? t('stopCamera') : t('startCamera')}
+          >
+            {stream ? t('stopCamera') : t('startCamera')}
           </Button>
-          <Button onClick={stopCamera} isDisabled={!stream || isLoading} aria-label="カメラ停止">
-            {t('stopCamera')}
+          <Button 
+            onClick={toggleAnalysis} 
+            isDisabled={!stream} 
+            colorScheme={isAnalyzing ? "red" : "green"}
+            aria-label={isAnalyzing ? t('stopAnalysis') : t('startAnalysis')}
+          >
+            {isAnalyzing ? t('stopAnalysis') : t('startAnalysis')}
           </Button>
-          <Button onClick={startAnalysis} isDisabled={!stream || isAnalyzing || isLoading} aria-label="分析開始">
-            {t('startAnalysis')}
+          <Button 
+            onClick={toggleMode} 
+            isDisabled={!stream || isAnalyzing}
+            aria-label={isVideoMode ? t('switchToImageMode') : t('switchToVideoMode')}
+          >
+            {isVideoMode ? t('switchToImageMode') : t('switchToVideoMode')}
           </Button>
-          <Button onClick={stopAnalysis} isDisabled={!isAnalyzing || isLoading} aria-label="分析停止">
-            {t('stopAnalysis')}
-          </Button>
-          <Button onClick={stopSpeaking} colorScheme="red" isDisabled={isLoading} aria-label="読み上げ停止">
+          <Button onClick={stopSpeaking} colorScheme="red" aria-label={t('stopSpeaking')}>
             {t('stopSpeaking')}
           </Button>
         </HStack>
@@ -214,59 +220,12 @@ const captureAndAnalyzeImage = useCallback(async () => {
         
         {analysisResult && (
           <Box mt={4} p={4} borderWidth={1} borderRadius="md" aria-live="polite">
-            <Text fontWeight="bold">{t('AnalysisResult')}:</Text>
+            <Text fontWeight="bold">{t('analysisResult')}:</Text>
             <Text>{analysisResult}</Text>
           </Box>
         )}
         
-        <Text>Capture Interval</Text>
-        <Select
-          value={settings.captureInterval}
-          onChange={(e) => handleSettingsChange('captureInterval', Number(e.target.value))}
-        >
-          <option value={3000}>Every 3 seconds</option>
-          <option value={5000}>Every 5 seconds</option>
-          <option value={10000}>Every 10 seconds</option>
-        </Select>
-        
-        <Text>Speech Rate</Text>
-        <Slider
-          min={0.5}
-          max={2}
-          step={0.1}
-          value={settings.speechRate}
-          onChange={(v) => handleSettingsChange('speechRate', v)}
-        >
-          <SliderTrack>
-            <SliderFilledTrack />
-          </SliderTrack>
-          <SliderThumb />
-        </Slider>
-        
-        <Text>Speech Volume</Text>
-        <Slider
-          min={0}
-          max={1}
-          step={0.1}
-          value={settings.speechVolume}
-          onChange={(v) => handleSettingsChange('speechVolume', v)}
-        >
-          <SliderTrack>
-            <SliderFilledTrack />
-          </SliderTrack>
-          <SliderThumb />
-        </Slider>
-        
-        <Button onClick={handleNavigation} isDisabled={!analysisResult || isLoading}>
-          {t('navigationInfo')}
-        </Button>
-        
-        {navigationInfo && (
-          <Box mt={4} p={4} borderWidth={1} borderRadius="md">
-            <Text fontWeight="bold">{t('navigationInfo')}:</Text>
-            <Text>{navigationInfo}</Text>
-          </Box>
-        )}
+        <Navigation />
       </VStack>
     </Container>
   );

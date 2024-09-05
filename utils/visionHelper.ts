@@ -1,12 +1,23 @@
-import vision from '@google-cloud/vision';
+import * as visionImport from '@google-cloud/vision';
 
-const client = new vision.ImageAnnotatorClient();
+let vision: typeof visionImport;
+if (typeof window === 'undefined') {
+  vision = visionImport;
+}
 
-export async function analyzeImageWithVision(imageData: string, mode: string) {
+export async function analyzeImageWithVision(imageData: string, analysisMode: string) {
+  if (typeof window !== 'undefined') {
+    throw new Error('This function can only be called from the server side');
+  }
+
+  const client = new vision.ImageAnnotatorClient({
+    keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  });
+
   const image = { content: imageData.split(',')[1] };
   let result;
 
-  switch (mode) {
+  switch (analysisMode) {
     case 'normal':
       result = await client.annotateImage({
         image,
