@@ -5,24 +5,47 @@ export async function analyzeImageWithAI(data: string | Blob, analysisMode: 'nor
       if (!(data instanceof Blob)) {
         throw new Error('動画データはBlobである必要があります');
       }
-      const formData = new FormData();
-      formData.append('video', data, 'video.webm');
-      const response = await fetch('/api/videoAnalysis', {
-        method: 'POST',
-        body: formData,
+      
+      // Blobをbase64エンコードされた文字列に変換
+      const base64data = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(data);
       });
-      if (!response.ok) throw new Error('動画分析に失敗しました');
+      
+      console.log('Sending video data of length:', base64data.length);
+
+      const response = await fetch(process.env.NEXT_PUBLIC_ANALYZE_VIDEO_URL!, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoData: base64data }),
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error('Error response body:', errorBody);
+        throw new Error(`動画分析に失敗しました: ${response.status} ${response.statusText} - ${errorBody}`);
+      }
       const { analysis } = await response.json();
       result = analysis;
     } else {
-      const response = await fetch('/api/visionAnalysis', {
+      const prompt = createPromptForMode(analysisMode, null, previousAnalysis);
+      const response = await fetch(process.env.NEXT_PUBLIC_ANALYZE_IMAGE_URL!, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageData: data, analysisMode: 'normal' }),
+        body: JSON.stringify({ imageData: data, prompt, previousAnalysis }),
       });
-      if (!response.ok) throw new Error('Vision AI分析に失敗しました');
-      const { result: visionResult } = await response.json();
-      result = await interpretWithGemini(visionResult, 'normal', previousAnalysis);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`画像分析に失敗しました: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+      const { analysis } = await response.json();
+      result = analysis;
     }
 
     return result;
@@ -30,6 +53,15 @@ export async function analyzeImageWithAI(data: string | Blob, analysisMode: 'nor
     console.error("画像/動画の分析中にエラーが発生しました:", error);
     throw new Error(`分析に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function interpretWithGemini(analysisResult: any, analysisMode: string, previousAnalysis: string | null) {
@@ -88,4 +120,5 @@ function createPromptForMode(mode: string, analysisResult: any, previousAnalysis
 分析結果: ${JSON.stringify(analysisResult)}
 `;
   }
+  
 }

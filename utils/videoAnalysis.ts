@@ -50,40 +50,18 @@ export async function analyzeVideoStream(videoStream: Buffer) {
 
 export async function analyzeVideoWithGemini(videoData: Buffer, previousAnalysis: string = ''): Promise<string> {
   try {
-    const annotations = await retryWithBackoff(() => analyzeVideoStream(videoData));
-    const analysisResult = JSON.stringify(annotations, null, 2);
-
-    const prompt = `
-    動画の分析結果を以下に示します。これを基に、以下の点に焦点を当てて簡潔に説明してください：
-    1. 検出された主要なオブジェクトとその動き
-    2. 潜在的な障害物や危険要素
-    3. シーンの変化や重要なイベント
-    4. 前回の分析からの主な変更点（ある場合）
-    
-    回答は3-4の短い日本語の文で、シンプルで直接的な表現を使用してください。
-    例: '歩行者が右から左に移動しています。2メートル先に椅子があります。車が接近しているため注意が必要です。'
-    
-    前回の分析: "${previousAnalysis || '初回分析'}"
-    動画分析結果: ${analysisResult}
-    `;
-
-    const generativeModel = vertexai.preview.getGenerativeModel({
-      model: model,
-      generationConfig: {
-        maxOutputTokens: 2048,
-        temperature: 0.9,
-        topP: 1
-      },
+    const response = await fetch(process.env.NEXT_PUBLIC_VIDEO_ANALYSIS_URL!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoData: videoData.toString('base64'), previousAnalysis }),
     });
 
-    const result = await generativeModel.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-    });
-    
-    const response = await result.response;
-    const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No text generated';
-    return generatedText;
+    if (!response.ok) {
+      throw new Error(`Video analysis failed: ${response.statusText}`);
+    }
 
+    const { analysis } = await response.json();
+    return analysis;
   } catch (error) {
     console.error('Error in video analysis with Gemini:', error);
     throw new Error(`Video analysis with Gemini failed: ${error instanceof Error ? error.message : String(error)}`);

@@ -90,16 +90,22 @@ const Camera: React.FC = () => {
 
   const analyzeVideo = async (videoBlob: Blob) => {
     try {
-      setIsLoading(true);
-      const result = await analyzeImageWithAI(videoBlob, 'video', null);
-      setAnalysisResult(result);
-      speakText(result);
+      const base64 = await blobToBase64(videoBlob);
+      const response = await analyzeImageWithAI(base64);
+      console.log("Video analysis result:", response);
+      // 結果の処理
     } catch (error) {
       console.error("Error analyzing video:", error);
-      setError(t('videoAnalysisError'));
-    } finally {
-      setIsLoading(false);
     }
+  };
+
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
 
   const captureAndAnalyzeImage = useCallback(async () => {
