@@ -8,6 +8,10 @@ steps:
   - name: 'node:18'
     entrypoint: 'npm'
     args: ['run', 'build']
+    env:
+      - 'NEXT_PUBLIC_ANALYZE_IMAGE_URL=${_ANALYZE_IMAGE_URL}'
+      - 'NEXT_PUBLIC_ANALYZE_VIDEO_URL=${_ANALYZE_VIDEO_URL}'
+      - 'NEXT_PUBLIC_VIDEO_ANALYSIS_URL=${_VIDEO_ANALYSIS_URL}'
 
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
@@ -31,8 +35,15 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'NEXT_PUBLIC_ANALYZE_IMAGE_URL=${_ANALYZE_IMAGE_URL},NEXT_PUBLIC_ANALYZE_VIDEO_URL=${_ANALYZE_VIDEO_URL},NEXT_PUBLIC_VIDEO_ANALYSIS_URL=${_VIDEO_ANALYSIS_URL}'
       - '--set-secrets'
       - 'yuting=yuting:latest'
       
 images:
   - 'gcr.io/$PROJECT_ID/visionbridge:$COMMIT_SHA'
+
+substitutions:
+  _ANALYZE_IMAGE_URL: 'https://asia-northeast1-visionbridge.cloudfunctions.net/analyzeImage'
+  _ANALYZE_VIDEO_URL: 'https://asia-northeast1-visionbridge.cloudfunctions.net/analyzeVideo'
+  _VIDEO_ANALYSIS_URL: 'https://asia-northeast1-visionbridge.cloudfunctions.net/videoAnalysis'
