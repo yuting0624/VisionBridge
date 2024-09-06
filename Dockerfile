@@ -12,7 +12,6 @@ RUN pnpm install --frozen-lockfile
 
 # ソースコードのコピーとビルド
 COPY . .
-RUN if [ -d ".next" ]; then cp -r .next ./; fi
 RUN pnpm run build
 
 # ビルド後のファイル構造を確認
