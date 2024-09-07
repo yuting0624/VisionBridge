@@ -20,7 +20,6 @@ async function analyzeVideoStream(videoData) {
   if (typeof videoData === 'string') {
     inputContent = videoData.split(',')[1]; 
   } else if (videoData instanceof Buffer) {
-    // Bufferオブジェクトの場合
     inputContent = videoData.toString('base64');
   } else {
     throw new Error('Unsupported video data format');
@@ -50,7 +49,6 @@ async function analyzeVideoStream(videoData) {
 exports.analyzeVideo = (req, res) => {
   return cors(req, res, async () => {
     if (req.method === 'OPTIONS') {
-      // プリフライトリクエストの処理
       res.set('Access-Control-Allow-Origin', 'http://localhost:3000');
       res.set('Access-Control-Allow-Methods', 'POST');
       res.set('Access-Control-Allow-Headers', 'Content-Type');
@@ -82,12 +80,12 @@ exports.analyzeVideo = (req, res) => {
       2. 潜在的な障害物や危険要素
       3. シーンの変化や重要なイベント
       4. 前回の分析からの主な変更点（ある場合）
-      
+
       回答は3-4の短い日本語の文で、シンプルで直接的な表現を使用してください。
       例: '歩行者が右から左に移動しています。2メートル先に椅子があります。車が接近しているため注意が必要です。'
-      
+
       前回の分析: "${previousAnalysis || '初回分析'}"
-      動画分析結果: ${analysisResult}
+      動画分析結果: ${JSON.stringify(analysisResult)}
       `;
 
       const generativeModel = vertexAi.preview.getGenerativeModel({

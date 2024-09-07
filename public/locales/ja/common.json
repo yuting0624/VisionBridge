@@ -12,7 +12,7 @@
   "offlineMessage": "現在オフラインです。一部の機能が利用できない可能性があります。",
   "navigationInfo": "ナビ情報",
   "loading": "ロード中",
-  "AnalysisResult": "分析結果",
+  "analysisResult": "分析結果",
   "currentMode": "現在モード",
   "defaultMode": "通常モード",
   "personMode": "人物認識モード",
@@ -20,5 +20,17 @@
   "switchToImageMode": "画像モードに切り替え",
   "switchToVideoMode": "動画モードに切り替え",
   "ImageAnalysisMode": "画像分析モード",
-  "VideoAnalysisMode": "動画分析モード"
+  "VideoAnalysisMode": "動画分析モード",
+  "captureImage": "画像を撮影",
+  "cameraStarted": "カメラが起動しました。",
+  "cameraStopped": "カメラが停止しました。",
+  "analysisStarted": "分析を開始しました。",
+  "analysisStopped": "分析を停止しました。",
+  "cameraAccessError": "カメラへのアクセスが拒否されました。",
+  "videoAnalysisError": "動画分析中にエラーが発生しました。",
+  "imageAnalysisError": "画像分析中にエラーが発生しました。",
+  "imageCaptured": "画像を撮影しました。",
+  "imageCapturedError": "画像の撮影に失敗しました。",
+  "imageCapturedSuccess": "画像の撮影に成功しました。",
+  "imageCapturedFailure": "画像の撮影に失敗しました。"
 }

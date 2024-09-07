@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden, useColorMode, Icon } from '@chakra-ui/react';
-import { FaImage, FaVideo } from 'react-icons/fa';
+import { FaImage, FaVideo, FaCamera, FaSync } from 'react-icons/fa';
 import { analyzeImageWithAI } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
@@ -18,25 +18,31 @@ const Camera: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   const toggleCamera = async () => {
     if (stream) {
       stopEverything();
+      speakText(t('cameraStopped'));
     } else {
       await startCamera();
+      speakText(t('cameraStarted'));
     }
   };
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
       setStream(mediaStream);
     } catch (error) {
-      console.error("Error accessing camera:", error);
-      setError(t('cameraAccessError'));
+      console.error("カメラへのアクセスエラー:", error);
+      setErrorWithVoice(t('cameraAccessError'));
     }
   };
 
@@ -58,11 +64,13 @@ const Camera: React.FC = () => {
       if (isVideoMode) {
         stopVideoRecording();
       }
+      speakText(t('analysisStopped'));
     } else {
       setIsAnalyzing(true);
       if (isVideoMode) {
         startVideoRecording();
       }
+      speakText(t('analysisStarted'));
     }
   };
 
@@ -98,7 +106,7 @@ const Camera: React.FC = () => {
       speakText(response); // 結果を音声で読み上げる
     } catch (error) {
       console.error("Error analyzing video:", error);
-      setError(t('videoAnalysisError'));
+      setErrorWithVoice(t('videoAnalysisError'));
     } finally {
       setIsLoading(false); // 動画分析終了時にローディング状態をfalseに設定
     }
@@ -130,7 +138,34 @@ const Camera: React.FC = () => {
           speakText(result);
         } catch (error) {
           console.error("Error analyzing image:", error);
-          setError(t('imageAnalysisError'));
+          setErrorWithVoice(t('imageAnalysisError'));
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  }, [t]);
+
+  const captureImage = useCallback(async () => {
+    if (videoRef.current && canvasRef.current) {
+      setIsLoading(true);
+      setError(null);
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
+        setCapturedImage(imageDataUrl);
+        speakText(t('imageCaptured'));
+        
+        try {
+          const result = await analyzeImageWithAI(imageDataUrl, 'normal', null);
+          setAnalysisResult(result);
+          speakText(result);
+        } catch (error) {
+          console.error("Error analyzing image:", error);
+          setErrorWithVoice(t('imageAnalysisError'));
         } finally {
           setIsLoading(false);
         }
@@ -158,6 +193,11 @@ const Camera: React.FC = () => {
   };
 
   const { colorMode } = useColorMode();
+
+  const setErrorWithVoice = (errorMessage: string) => {
+    setError(errorMessage);
+    speakText(errorMessage);
+  };
 
   return (
     <Container maxW="container.xl" centerContent p={4}>
@@ -220,6 +260,15 @@ const Camera: React.FC = () => {
           </Button>
           <Button onClick={stopSpeaking} colorScheme="red" aria-label={t('stopSpeaking')}>
             {t('stopSpeaking')}
+          </Button>
+          <Button
+            onClick={captureImage}
+            isDisabled={!stream || isLoading}
+            colorScheme="blue"
+            leftIcon={<Icon as={FaCamera} />}
+            aria-label={t('captureImage')}
+          >
+            {t('captureImage')}
           </Button>
         </HStack>
         

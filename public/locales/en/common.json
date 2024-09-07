@@ -12,7 +12,7 @@
   "offlineMessage": "You are currently offline. Some features may not be available.",
   "navigationInfo": "Navigation",
   "loading": "Loading",
-  "AnalysisResult": "Analysis Result",
+  "analysisResult": "Analysis Result",
   "currentMode": "Current Mode",
   "defaultMode": "Default Mode",
   "personMode": "Person Mode",
@@ -20,5 +20,17 @@
   "switchToImageMode": "Switch to Image Mode",
   "switchToVideoMode": "Switch to Video Mode",
   "ImageAnalysisMode": "Image Analysis Mode",
-  "VideoAnalysisMode": "Video Analysis Mode"
+  "VideoAnalysisMode": "Video Analysis Mode",
+  "captureImage": "Capture Image",
+  "cameraStarted": "Camera Started",
+  "cameraStopped": "Camera Stopped",
+  "analysisStarted": "Analysis Started",
+  "analysisStopped": "Analysis Stopped",
+  "cameraAccessError": "Camera Access Error",
+  "videoAnalysisError": "Video Analysis Error",
+  "imageAnalysisError": "Image Analysis Error",
+  "imageCaptured": "Image Captured",
+  "imageCapturedError": "Image Captured Error",
+  "imageCapturedSuccess": "Image Captured Success",
+  "imageCapturedFailure": "Image Captured Failure"
 }
