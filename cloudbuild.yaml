@@ -40,6 +40,9 @@ steps:
       - '--set-secrets'
       - 'yuting=yuting:latest'
       
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 images:
   - 'gcr.io/$PROJECT_ID/visionbridge:$COMMIT_SHA'
 
