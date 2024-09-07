@@ -160,8 +160,10 @@ const Camera: React.FC = () => {
         speakText(t('imageCaptured'));
         
         try {
-          const result = await analyzeImageWithAI(imageDataUrl, 'normal', null);
+          // ここで 'detailed' モードを使用
+          const result = await analyzeImageWithAI(imageDataUrl, 'detailed', null);
           setAnalysisResult(result);
+          speakText(t('detailedAnalysisReady'));
           speakText(result);
         } catch (error) {
           console.error("Error analyzing image:", error);

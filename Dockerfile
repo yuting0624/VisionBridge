@@ -2,6 +2,9 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 
+# キャッシュを無効化するための環境変数を追加
+ARG CACHEBUST=1
+
 # パッケージマネージャにpnpmを使用
 RUN apk add --no-cache libc6-compat
 RUN npm install -g pnpm

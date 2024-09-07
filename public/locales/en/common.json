@@ -19,8 +19,8 @@
   "textMode": "Text Mode",
   "switchToImageMode": "Switch to Image Mode",
   "switchToVideoMode": "Switch to Video Mode",
-  "ImageAnalysisMode": "Image Analysis Mode",
-  "VideoAnalysisMode": "Video Analysis Mode",
+  "imageAnalysisMode": "Image Analysis Mode",
+  "videoAnalysisMode": "Video Analysis Mode",
   "captureImage": "Capture Image",
   "cameraStarted": "Camera Started",
   "cameraStopped": "Camera Stopped",
@@ -32,5 +32,6 @@
   "imageCaptured": "Image Captured",
   "imageCapturedError": "Image Captured Error",
   "imageCapturedSuccess": "Image Captured Success",
-  "imageCapturedFailure": "Image Captured Failure"
+  "imageCapturedFailure": "Image Captured Failure",
+  "detailedAnalysisReady": "Detailed analysis is ready. Reading the results."
 }

@@ -15,12 +15,10 @@
   "analysisResult": "分析結果",
   "currentMode": "現在モード",
   "defaultMode": "通常モード",
-  "personMode": "人物認識モード",
-  "textMode": "テキスト認識モード",
   "switchToImageMode": "画像モードに切り替え",
   "switchToVideoMode": "動画モードに切り替え",
-  "ImageAnalysisMode": "画像分析モード",
-  "VideoAnalysisMode": "動画分析モード",
+  "imageAnalysisMode": "画像分析モード",
+  "videoAnalysisMode": "動画分析モード",
   "captureImage": "画像を撮影",
   "cameraStarted": "カメラが起動しました。",
   "cameraStopped": "カメラが停止しました。",
@@ -32,5 +30,6 @@
   "imageCaptured": "画像を撮影しました。",
   "imageCapturedError": "画像の撮影に失敗しました。",
   "imageCapturedSuccess": "画像の撮影に成功しました。",
-  "imageCapturedFailure": "画像の撮影に失敗しました。"
+  "imageCapturedFailure": "画像の撮影に失敗しました。",
+  "detailedAnalysisReady": "画像の詳細な分析が完了しました。"
 }
