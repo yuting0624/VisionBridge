@@ -5,6 +5,7 @@ import { analyzeImageWithAI } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
 import Navigation from './Navigation';
+import { initializeSpeechRecognition } from '../utils/speechRecognition';
 
 const Camera: React.FC = () => {
   const { t } = useTranslation('common')
@@ -18,7 +19,6 @@ const Camera: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
 
   const toggleCamera = async () => {
@@ -99,26 +99,17 @@ const Camera: React.FC = () => {
 
   const analyzeVideo = async (videoBlob: Blob) => {
     try {
-      setIsLoading(true); // 動画分析開始時にローディング状態をtrueに設定
+      setIsLoading(true); 
       const response = await analyzeImageWithAI(videoBlob, 'video', null);
       console.log("Video analysis result:", response);
-      setAnalysisResult(response); // 分析結果を状態に保存
-      speakText(response); // 結果を音声で読み上げる
+      setAnalysisResult(response); 
+      speakText(response); 
     } catch (error) {
       console.error("Error analyzing video:", error);
       setErrorWithVoice(t('videoAnalysisError'));
     } finally {
-      setIsLoading(false); // 動画分析終了時にローディング状態をfalseに設定
+      setIsLoading(false); 
     }
-  };
-
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
   };
 
   const captureAndAnalyzeImage = useCallback(async () => {
@@ -160,10 +151,8 @@ const Camera: React.FC = () => {
         speakText(t('imageCaptured'));
         
         try {
-          // ここで 'detailed' モードを使用
           const result = await analyzeImageWithAI(imageDataUrl, 'detailed', null);
           setAnalysisResult(result);
-          speakText(t('detailedAnalysisReady'));
           speakText(result);
         } catch (error) {
           console.error("Error analyzing image:", error);
@@ -181,7 +170,7 @@ const Camera: React.FC = () => {
     if (isAnalyzing && !isVideoMode) {
       intervalId = setInterval(() => {
         captureAndAnalyzeImage();
-      }, 5000); // 5秒ごとに分析
+      }, 7000); 
     }
 
     return () => {
@@ -200,6 +189,17 @@ const Camera: React.FC = () => {
     setError(errorMessage);
     speakText(errorMessage);
   };
+
+  useEffect(() => {
+    initializeSpeechRecognition({
+      startCamera: startCamera,
+      stopCamera: stopEverything,
+      startAnalysis: () => setIsAnalyzing(true),
+      stopAnalysis: () => setIsAnalyzing(false),
+      captureImage: captureImage,
+      toggleMode: toggleMode,
+    });
+  }, []);
 
   return (
     <Container maxW="container.xl" centerContent p={4}>

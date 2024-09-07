@@ -1,4 +1,4 @@
-let speechRate = 1;
+let speechRate = 1.3;
 let speechVolume = 1;
 
 export function speakText(text: string) {
