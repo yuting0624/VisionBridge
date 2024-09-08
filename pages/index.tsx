@@ -8,6 +8,7 @@ import ColorModeToggle from '../components/ColorModeToggle'
 import LanguageSwitch from '../components/LanguageSwitch'
 import { useCallback } from 'react'
 import { speakText } from '../utils/speechSynthesis'
+import { startSpeechRecognition, stopSpeechRecognition } from '../utils/speechRecognition';
 
 const Home: NextPage = () => {
   const { t } = useTranslation('common')
@@ -22,19 +23,14 @@ const Home: NextPage = () => {
 
   const handleVoiceInput = useCallback(() => {
     if ('webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition()
-      recognition.lang = 'ja-JP'
-      recognition.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript
-        toast({
-          title: '音声入力',
-          description: transcript,
-          status: 'info',
-          duration: 5000,
-          isClosable: true,
-        })
-      }
-      recognition.start()
+      startSpeechRecognition();
+      toast({
+        title: '音声入力開始',
+        description: '音声を入力してください',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
     } else {
       toast({
         title: 'エラー',
@@ -42,9 +38,9 @@ const Home: NextPage = () => {
         status: 'error',
         duration: 3000,
         isClosable: true,
-      })
+      });
     }
-  }, [toast])
+  }, [toast]);
 
   const handleGetLocation = useCallback(() => {
     if ('geolocation' in navigator) {

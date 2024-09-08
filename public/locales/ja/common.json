@@ -31,5 +31,8 @@
   "imageCapturedError": "画像の撮影に失敗しました。",
   "imageCapturedSuccess": "画像の撮影に成功しました。",
   "imageCapturedFailure": "画像の撮影に失敗しました。",
-  "detailedAnalysisReady": "画像の詳細な分析が完了しました。"
+  "detailedAnalysisReady": "画像の詳細な分析が完了しました。",
+  "startListening": "音声認識開始",
+  "stopListening": "音声認識停止",
+  "transcription": "音声認識結果"
 }

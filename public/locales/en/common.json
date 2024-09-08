@@ -33,5 +33,8 @@
   "imageCapturedError": "Image Captured Error",
   "imageCapturedSuccess": "Image Captured Success",
   "imageCapturedFailure": "Image Captured Failure",
-  "detailedAnalysisReady": "Detailed analysis is ready. Reading the results."
+  "detailedAnalysisReady": "Detailed analysis is ready. Reading the results.",
+  "startListening": "Start Listening",
+  "stopListening": "Stop Listening",
+  "transcription": "Transcription"
 }

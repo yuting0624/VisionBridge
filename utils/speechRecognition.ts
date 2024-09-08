@@ -4,6 +4,8 @@ type CommandHandler = () => void;
 
 const commands: { [key: string]: CommandHandler } = {};
 
+let recognition: any;
+
 export function initializeSpeechRecognition(cameraHandlers: {
   startCamera: () => void;
   stopCamera: () => void;
@@ -13,7 +15,7 @@ export function initializeSpeechRecognition(cameraHandlers: {
   toggleMode: () => void;
 }) {
   if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition = new (window as any).webkitSpeechRecognition();
     recognition.continuous = true;
     recognition.lang = 'ja-JP';
 
@@ -23,22 +25,52 @@ export function initializeSpeechRecognition(cameraHandlers: {
 
       console.log('Recognized command:', command);
 
-      try {
-        const response = await fetch('/api/processCommand', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command }),
-        });
-        const result = await response.json();
-        executeAction(result.action, result.parameters, cameraHandlers);
-      } catch (error) {
-        console.error('Error processing command:', error);
+      if (command) {
+        try {
+          const response = await fetch('/api/processCommand', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ command }),
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error}`);
+          }
+          const result = await response.json();
+          console.log('Processed command result:', result);
+          
+          let action = 'unknown';
+          let parameters = {};
+          
+          if (result.response && result.response.candidates && result.response.candidates.length > 0) {
+            const candidateText = result.response.candidates[0].content.parts[0].text;
+            if (candidateText.toLowerCase().includes('カメラを起動')) {
+              action = 'startCamera';
+            }
+          }
+          
+          executeAction(action, parameters, cameraHandlers);
+        } catch (error: any) {
+          console.error('Error processing command:', error);
+          speakText('コマンドの処理中にエラーが発生しました。詳細: ' + error.message);
+        }
       }
     };
 
-    recognition.start();
   } else {
     console.error('Web Speech API is not supported in this browser.');
+  }
+}
+
+export function startSpeechRecognition() {
+  if (recognition) {
+    recognition.start();
+  }
+}
+
+export function stopSpeechRecognition() {
+  if (recognition) {
+    recognition.stop();
   }
 }
 

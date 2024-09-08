@@ -109,13 +109,7 @@ export const VoiceCommandProcessor: React.FC = () => {
     }
   };
 
-  return (
-    <div>
-      <button onClick={startListening} disabled={isListening}>
-        {isListening ? '音声認識中...' : '音声コマンドを開始'}
-      </button>
-    </div>
-  );
+  return null;
 };
 
 export default useDialogFlow;

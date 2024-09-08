@@ -6,6 +6,7 @@ import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
 import Navigation from './Navigation';
 import { initializeSpeechRecognition } from '../utils/speechRecognition';
+import VoiceCommands from './VoiceCommands';
 
 const Camera: React.FC = () => {
   const { t } = useTranslation('common')
@@ -296,6 +297,13 @@ const Camera: React.FC = () => {
         )}
         
         <Navigation />
+        <VoiceCommands
+          onStartCamera={startCamera}
+          onStopCamera={stopEverything}
+          onStartAnalysis={() => setIsAnalyzing(true)}
+          onStopAnalysis={() => setIsAnalyzing(false)}
+          onCaptureImage={captureImage}
+        />
       </VStack>
     </Container>
   );

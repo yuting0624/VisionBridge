@@ -1,13 +1,17 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  console.log('Webhook received request:', JSON.stringify(req.body, null, 2));
+
   if (req.method === 'POST') {
     const { queryResult } = req.body;
-    const intent = queryResult.intent.displayName;
+    const intent = queryResult?.intent?.displayName;
+
+    console.log('Detected intent:', intent);
 
     switch (intent) {
       case 'startCamera':
-        // カメラ起動のロジックをここに実装
+        console.log('Executing startCamera action');
         res.status(200).json({
           fulfillmentText: 'カメラを起動しました。',
           action: 'startCamera',
@@ -15,7 +19,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
       // 他のインテントのケースをここに追加
       default:
-        res.status(400).json({ error: 'Unknown intent' });
+        console.log('Unknown intent:', intent);
+        res.status(200).json({ 
+          fulfillmentText: '認識できないコマンドです。',
+          action: 'unknown'
+        });
     }
   } else {
     res.setHeader('Allow', ['POST']);
