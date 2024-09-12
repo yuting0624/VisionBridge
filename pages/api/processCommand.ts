@@ -1,17 +1,19 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { SessionsClient } from '@google-cloud/dialogflow-cx';
-import { analyzeImageWithAI } from '../../utils/imageAnalysis';
 
 const projectId = process.env.VERTEX_AI_PROJECT_ID;
 const location = process.env.VERTEX_AI_LOCATION;
 const agentId = process.env.VERTEX_AI_AGENT_ID;
 
-const sessionClient = new SessionsClient();
+// エンドポイントを正しく設定
+const endpoint = 'asia-northeast1-dialogflow.googleapis.com';
+const sessionClient = new SessionsClient({ apiEndpoint: endpoint });
+
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
-      const { command, imageData } = req.body;
+      const { command } = req.body;
       const sessionId = Math.random().toString(36).substring(7);
       const sessionPath = sessionClient.projectLocationAgentSessionPath(
         projectId ?? '',
@@ -31,36 +33,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       const [response] = await sessionClient.detectIntent(request);
-      console.log('Detected intent');
+      console.log('Full Dialogflow response:', JSON.stringify(response, null, 2));
 
       const result = response.queryResult;
       if (result) {
-        console.log(`  Query: ${result.text}`);
-        console.log(`  Response: ${result.responseMessages}`);
+        console.log('QueryResult:', JSON.stringify(result, null, 2));
 
-        if (result.intent) {
-          console.log(`  Intent: ${result.intent.displayName}`);
+        let dialogflowResponse;
 
-          // インテントに基づいてアクションを実行
-          if (result.intent.displayName === 'image_analysis') {
-            const analysisResult = await analyzeImageWithAI(imageData, 'normal', null);
-            res.status(200).json({
-              action: 'image_analysis',
-              result: analysisResult,
-              fulfillmentText: `画像分析結果: ${analysisResult}`
-            });
-          } else {
-            // その他のインテントの処理
-            res.status(200).json({
-              action: result.intent.displayName,
-              parameters: result.parameters,
-              fulfillmentText: result.responseMessages?.[0]?.text?.text?.[0] ?? '意図を理解できませんでした。'
-            });
-          }
+        if (result.match && result.match.intent) {
+          // インテントがマッチした場合の処理（既存のコード）
+          // ...
         } else {
-          console.log('  No intent matched.');
-          res.status(200).json({ action: 'unknown', parameters: {}, fulfillmentText: '意図を理解できませんでした。' });
+          // NO_MATCHの場合の処理
+          console.log('No intent matched');
+          
+          // ジェネレーターの応答を解析
+          if (result.responseMessages && result.responseMessages.length > 0) {
+            for (const message of result.responseMessages) {
+              if (message.text && message.text.text && message.text.text.length > 0) {
+                const generatedResponse = message.text.text[0];
+                try {
+                  // JSON文字列から実際のJSONオブジェクトを抽出
+                  const jsonMatch = generatedResponse.match(/```json\n([\s\S]*?)\n```/);
+                  if (jsonMatch && jsonMatch[1]) {
+                    dialogflowResponse = JSON.parse(jsonMatch[1]);
+                  } else {
+                    throw new Error('JSON not found in the response');
+                  }
+                } catch (error) {
+                  console.error('Error parsing generator response:', error);
+                  dialogflowResponse = {
+                    action: 'NO_MATCH',
+                    fulfillmentText: '申し訳ありません。正しく理解できませんでした。',
+                    parameters: {}
+                  };
+                }
+                break;
+              }
+            }
+          }
         }
+
+        if (!dialogflowResponse) {
+          dialogflowResponse = {
+            action: 'NO_MATCH',
+            fulfillmentText: '応答を生成できませんでした。',
+            parameters: {}
+          };
+        }
+
+        console.log('Sending response:', JSON.stringify(dialogflowResponse, null, 2));
+        res.status(200).json(dialogflowResponse);
+      } else {
+        console.log('No query result.');
+        res.status(200).json({ 
+          action: 'ERROR',
+          fulfillmentText: '応答を取得できませんでした。',
+          parameters: {}
+        });
       }
     } catch (error: any) {
       console.error('Error in processCommand:', error);

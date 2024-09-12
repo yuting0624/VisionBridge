@@ -195,10 +195,10 @@ const Camera: React.FC = () => {
     initializeSpeechRecognition({
       startCamera: startCamera,
       stopCamera: stopEverything,
-      startAnalysis: () => setIsAnalyzing(true),
-      stopAnalysis: () => setIsAnalyzing(false),
+      toggleAnalysis: toggleAnalysis,
       captureImage: captureImage,
       toggleMode: toggleMode,
+      stopSpeaking: stopSpeaking
     });
   }, []);
 
@@ -300,9 +300,10 @@ const Camera: React.FC = () => {
         <VoiceCommands
           onStartCamera={startCamera}
           onStopCamera={stopEverything}
-          onStartAnalysis={() => setIsAnalyzing(true)}
-          onStopAnalysis={() => setIsAnalyzing(false)}
+          onToggleAnalysis={toggleAnalysis}
           onCaptureImage={captureImage}
+          onToggleMode={toggleMode}
+          onStopSpeaking={stopSpeaking}
         />
       </VStack>
     </Container>

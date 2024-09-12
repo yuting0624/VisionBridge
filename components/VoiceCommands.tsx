@@ -1,22 +1,24 @@
 import React, { useState, useCallback } from 'react';
-import { Button, Text, VStack } from '@chakra-ui/react';
 import { useTranslation } from 'next-i18next';
 import { speakText } from '../utils/speechSynthesis';
+import { handleCommand } from '../utils/speechRecognition';
 
 interface VoiceCommandsProps {
   onStartCamera: () => void;
   onStopCamera: () => void;
-  onStartAnalysis: () => void;
-  onStopAnalysis: () => void;
+  onToggleAnalysis: () => void;
   onCaptureImage: () => void;
+  onToggleMode: () => void;
+  onStopSpeaking: () => void;
 }
 
 const VoiceCommands: React.FC<VoiceCommandsProps> = ({
   onStartCamera,
   onStopCamera,
-  onStartAnalysis,
-  onStopAnalysis,
+  onToggleAnalysis,
   onCaptureImage,
+  onToggleMode,
+  onStopSpeaking,
 }) => {
   const { t } = useTranslation('common');
   const [isListening, setIsListening] = useState(false);
@@ -35,13 +37,13 @@ const VoiceCommands: React.FC<VoiceCommandsProps> = ({
 
       recognition.onstart = () => {
         console.log('音声認識開始');
-        speakText('音声認識を開始しました');
+        //speakText('音声認識を開始しました');
       };
 
       recognition.onresult = (event: any) => {
         const command = event.results[0][0].transcript.toLowerCase();
         setTranscript(command);
-        handleCommand(command);
+        handleCommand(command, onStartCamera, onStopCamera, onCaptureImage, onToggleAnalysis, onToggleMode, onStopSpeaking, speakText);
       };
 
       recognition.onerror = (event: any) => {
@@ -53,7 +55,7 @@ const VoiceCommands: React.FC<VoiceCommandsProps> = ({
       recognition.onend = () => {
         console.log('音声認識終了');
         setIsListening(false);
-        speakText('音声認識を終了しました');
+        //speakText('音声認識を終了しました');
       };
 
       recognition.start();
@@ -61,7 +63,7 @@ const VoiceCommands: React.FC<VoiceCommandsProps> = ({
       setError('このブラウザは音声認識をサポートしていません。');
       setIsListening(false);
     }
-  }, []);
+  }, [onStartCamera, onStopCamera, onCaptureImage, onToggleAnalysis, onToggleMode, onStopSpeaking]);
 
   const stopListening = useCallback(() => {
     if ('webkitSpeechRecognition' in window) {
@@ -69,43 +71,6 @@ const VoiceCommands: React.FC<VoiceCommandsProps> = ({
     }
     setIsListening(false);
   }, []);
-
-  const handleCommand = async (command: string) => {
-    console.log('Recognized command:', command);
-    try {
-      const response = await fetch('/api/processCommand', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command }),
-      });
-      const data = await response.json();
-      console.log('Vertex AI response:', data);
-      if (data.action === 'camera_control') {
-        handleCameraControl(data.parameters.action);
-      } else if (data.action === 'image_analysis') {
-        speakText(data.result);
-      } else {
-        speakText(data.fulfillmentText);
-      }
-    } catch (error) {
-      console.error('Error processing command:', error);
-      setError('コマンドの処理中にエラーが発生しました');
-    }
-  };
-
-  const handleCameraControl = (action: string) => {
-    switch (action) {
-      case 'start':
-        onStartCamera();
-        break;
-      case 'stop':
-        onStopCamera();
-        break;
-      case 'capture':
-        onCaptureImage();
-        break;
-    }
-  };
 
   return (
     <div>
