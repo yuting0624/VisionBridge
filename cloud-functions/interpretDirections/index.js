@@ -1,5 +1,8 @@
 const { VertexAI } = require('@google-cloud/vertexai');
-
+const cors = require('cors')({
+  origin: 'https://visionbridge-776625182572.asia-northeast1.run.app',
+  credentials: true
+});
 const projectId = process.env.GCP_PROJECT_ID;
 const location = 'asia-northeast1';
 const model = 'gemini-1.5-flash-001';
@@ -7,6 +10,8 @@ const model = 'gemini-1.5-flash-001';
 exports.interpretDirections = async (req, res) => {
 
   res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Credentials', 'true');
+  return cors(req, res, async () => {
 
   if (req.method === 'OPTIONS') {
     // プリフライトリクエストに対する処理
@@ -62,4 +67,5 @@ exports.interpretDirections = async (req, res) => {
     console.error('Error interpreting directions:', error);
     res.status(500).json({ error: 'Failed to interpret directions' });
   }
+});
 };
