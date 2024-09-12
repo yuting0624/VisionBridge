@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden, useColorMode, Icon } from '@chakra-ui/react';
-import { FaImage, FaVideo, FaCamera, FaSync } from 'react-icons/fa';
+import { FaImage, FaVideo, FaCamera, FaSync, FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop } from 'react-icons/fa';
 import { analyzeImageWithAI } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
 import Navigation from './Navigation';
-import { initializeSpeechRecognition } from '../utils/speechRecognition';
+import { initializeSpeechRecognition, startSpeechRecognition, stopSpeechRecognition } from '../utils/speechRecognition';
 import VoiceCommands from './VoiceCommands';
 
 const Camera: React.FC = () => {
@@ -198,17 +198,21 @@ const Camera: React.FC = () => {
       toggleAnalysis: toggleAnalysis,
       captureImage: captureImage,
       toggleMode: toggleMode,
-      stopSpeaking: stopSpeaking
+      stopSpeaking: stopSpeaking,
+      onTranscript: (transcript) => console.log('Transcript:', transcript),
+      onError: (error) => console.error('Speech recognition error:', error),
+      onListeningChange: (isListening) => console.log('Listening:', isListening),
     });
   }, []);
 
   return (
     <Container maxW="container.xl" centerContent p={4}>
-      <VStack spacing={4} align="stretch" width="100%">
+      <VStack spacing={6} align="stretch" width="100%">
         <Text mt={4} fontWeight="bold" textAlign="center">
           {t('currentMode')}: {isVideoMode ? t('videoAnalysisMode') : t('imageAnalysisMode')}
         </Text>
         
+        {/* カメラビュー */}
         <Box position="relative" width="100%" paddingTop="56.25%">
           <video
             ref={videoRef}
@@ -238,10 +242,22 @@ const Camera: React.FC = () => {
           )}
         </Box>
         
-        <HStack justify="center" wrap="wrap" spacing={2}>
+        {/* 音声コマンド */}
+        <VoiceCommands
+          onStartCamera={startCamera}
+          onStopCamera={stopEverything}
+          onToggleAnalysis={toggleAnalysis}
+          onCaptureImage={captureImage}
+          onToggleMode={toggleMode}
+          onStopSpeaking={stopSpeaking}
+        />
+        
+        {/* カメラコントロール */}
+        <HStack justify="center" wrap="wrap" spacing={4}>
           <Button 
             onClick={toggleCamera} 
             colorScheme={stream ? "red" : "green"}
+            leftIcon={<Icon as={stream ? FaStop : FaPlay} />}
             aria-label={stream ? t('stopCamera') : t('startCamera')}
           >
             {stream ? t('stopCamera') : t('startCamera')}
@@ -250,6 +266,7 @@ const Camera: React.FC = () => {
             onClick={toggleAnalysis} 
             isDisabled={!stream} 
             colorScheme={isAnalyzing ? "red" : "green"}
+            leftIcon={<Icon as={isAnalyzing ? FaStop : FaPlay} />}
             aria-label={isAnalyzing ? t('stopAnalysis') : t('startAnalysis')}
           >
             {isAnalyzing ? t('stopAnalysis') : t('startAnalysis')}
@@ -257,12 +274,10 @@ const Camera: React.FC = () => {
           <Button 
             onClick={toggleMode} 
             isDisabled={!stream || isAnalyzing}
+            leftIcon={<Icon as={isVideoMode ? FaImage : FaVideo} />}
             aria-label={isVideoMode ? t('switchToImageMode') : t('switchToVideoMode')}
           >
             {isVideoMode ? t('switchToImageMode') : t('switchToVideoMode')}
-          </Button>
-          <Button onClick={stopSpeaking} colorScheme="red" aria-label={t('stopSpeaking')}>
-            {t('stopSpeaking')}
           </Button>
           <Button
             onClick={captureImage}
@@ -297,14 +312,6 @@ const Camera: React.FC = () => {
         )}
         
         <Navigation />
-        <VoiceCommands
-          onStartCamera={startCamera}
-          onStopCamera={stopEverything}
-          onToggleAnalysis={toggleAnalysis}
-          onCaptureImage={captureImage}
-          onToggleMode={toggleMode}
-          onStopSpeaking={stopSpeaking}
-        />
       </VStack>
     </Container>
   );

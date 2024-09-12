@@ -34,5 +34,7 @@
   "detailedAnalysisReady": "画像の詳細な分析が完了しました。",
   "startListening": "音声認識開始",
   "stopListening": "音声認識停止",
-  "transcription": "音声認識結果"
+  "transcription": "音声認識結果",
+  "speechRecognitionError": "音声認識エラー",
+  "lastCommand": "直近のコマンド"
 }

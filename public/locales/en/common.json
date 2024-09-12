@@ -36,5 +36,7 @@
   "detailedAnalysisReady": "Detailed analysis is ready. Reading the results.",
   "startListening": "Start Listening",
   "stopListening": "Stop Listening",
-  "transcription": "Transcription"
+  "transcription": "Transcription",
+  "speechRecognitionError": "Speech Recognition Error",
+  "lastCommand": "Last Command"
 }

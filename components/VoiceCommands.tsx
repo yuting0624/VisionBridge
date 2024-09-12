@@ -1,90 +1,79 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'next-i18next';
 import { speakText } from '../utils/speechSynthesis';
-import { handleCommand } from '../utils/speechRecognition';
+import { handleCommand, initializeSpeechRecognition, startSpeechRecognition, stopSpeechRecognition } from '../utils/speechRecognition';
+import { Button, Text, VStack, Icon, useColorModeValue } from '@chakra-ui/react';
+import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
 
 interface VoiceCommandsProps {
-  onStartCamera: () => void;
+  onStartCamera: () => Promise<void>;
   onStopCamera: () => void;
   onToggleAnalysis: () => void;
-  onCaptureImage: () => void;
+  onCaptureImage: () => Promise<void>;
   onToggleMode: () => void;
   onStopSpeaking: () => void;
 }
 
-const VoiceCommands: React.FC<VoiceCommandsProps> = ({
-  onStartCamera,
-  onStopCamera,
-  onToggleAnalysis,
-  onCaptureImage,
-  onToggleMode,
-  onStopSpeaking,
-}) => {
+const VoiceCommands: React.FC<VoiceCommandsProps> = (props) => {
   const { t } = useTranslation('common');
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  const startListening = useCallback(() => {
-    setIsListening(true);
-    setError(null);
+  const buttonBg = useColorModeValue('blue.500', 'blue.200');
+  const buttonColor = useColorModeValue('white', 'gray.800');
 
-    if ('webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition();
-      recognition.lang = 'ja-JP';
-      recognition.continuous = false;
-      recognition.interimResults = false;
+  useEffect(() => {
+    initializeSpeechRecognition({
+      onTranscript: (text: string) => setTranscript(text),
+      onError: (err: string) => setError(err),
+      onListeningChange: (listening: boolean) => setIsListening(listening),
+      startCamera: props.onStartCamera,
+      stopCamera: props.onStopCamera,
+      toggleAnalysis: props.onToggleAnalysis,
+      captureImage: props.onCaptureImage,
+      toggleMode: props.onToggleMode,
+      stopSpeaking: props.onStopSpeaking,
+    });
+  }, [props]);
 
-      recognition.onstart = () => {
-        console.log('音声認識開始');
-        //speakText('音声認識を開始しました');
-      };
-
-      recognition.onresult = (event: any) => {
-        const command = event.results[0][0].transcript.toLowerCase();
-        setTranscript(command);
-        handleCommand(command, onStartCamera, onStopCamera, onCaptureImage, onToggleAnalysis, onToggleMode, onStopSpeaking, speakText);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        setError('音声認識エラー: ' + event.error);
-        setIsListening(false);
-      };
-
-      recognition.onend = () => {
-        console.log('音声認識終了');
-        setIsListening(false);
-        //speakText('音声認識を終了しました');
-      };
-
-      recognition.start();
-    } else {
-      setError('このブラウザは音声認識をサポートしていません。');
+  const toggleListening = () => {
+    if (isListening) {
+      stopSpeechRecognition();
       setIsListening(false);
+    } else {
+      startSpeechRecognition();
+      setIsListening(true);
     }
-  }, [onStartCamera, onStopCamera, onCaptureImage, onToggleAnalysis, onToggleMode, onStopSpeaking]);
-
-  const stopListening = useCallback(() => {
-    if ('webkitSpeechRecognition' in window) {
-      (window as any).webkitSpeechRecognition.abort();
-    }
-    setIsListening(false);
-  }, []);
+  };
 
   return (
-    <div>
-      <button
-        onClick={isListening ? stopListening : startListening}
-        className={`px-4 py-2 rounded ${
-          isListening ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-        } text-white font-bold`}
+    <VStack spacing={4} align="stretch">
+      <Button
+        onClick={toggleListening}
+        size="lg"
+        leftIcon={<Icon as={isListening ? FaMicrophoneSlash : FaMicrophone} />}
+        bg={buttonBg}
+        color={buttonColor}
+        _hover={{ opacity: 0.8 }}
+        _active={{ opacity: 0.6 }}
+        borderRadius="full"
+        boxShadow="lg"
+        transition="all 0.2s"
       >
         {isListening ? t('stopListening') : t('startListening')}
-      </button>
-      {transcript && <p>{t('lastCommand')}: {transcript}</p>}
-      {error && <p className="text-red-500">{error}</p>}
-    </div>
+      </Button>
+      {transcript && (
+        <Text fontSize="md" fontWeight="medium" textAlign="center">
+          {t('lastCommand')}: {transcript}
+        </Text>
+      )}
+      {error && (
+        <Text color="red.500" fontSize="sm" textAlign="center">
+          {error}
+        </Text>
+      )}
+    </VStack>
   );
 };
 

@@ -1,36 +1,37 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import textToSpeech from '@google-cloud/text-to-speech';
+import { SpeechClient } from '@google-cloud/speech';
 
-const client = new textToSpeech.TextToSpeechClient({
+const speechClient = new SpeechClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
-      const { text } = req.body;
-      if (!text) {
-        return res.status(400).json({ error: 'No text provided' });
+      const { audio } = req.body;
+      if (!audio) {
+        return res.status(400).json({ error: 'No audio data provided' });
       }
 
       const request = {
-        input: { text },
-        voice: { languageCode: 'en-US', ssmlGender: 'NEUTRAL' as const },
-        audioConfig: { audioEncoding: 'MP3' as const },
+        audio: {
+          content: audio,
+        },
+        config: {
+          encoding: 'WEBM_OPUS' as const,
+          languageCode: 'ja-JP',
+        },
       };
 
-      const [response] = await client.synthesizeSpeech(request);
-      const audioContent = response.audioContent;
+      const [response] = await speechClient.recognize(request);
+      const transcription = response.results
+        ?.map(result => result.alternatives?.[0]?.transcript)
+        .join('\n');
 
-      if (!audioContent) {
-        throw new Error('No audio content received from Text-to-Speech API');
-      }
-
-      res.setHeader('Content-Type', 'audio/mpeg');
-      res.send(audioContent);
+      res.status(200).json({ transcription });
     } catch (error) {
-      console.error('Error synthesizing speech:', error);
-      res.status(500).json({ error: 'Error synthesizing speech', details: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in speech recognition:', error);
+      res.status(500).json({ error: 'Error in speech recognition', details: error instanceof Error ? error.message : 'Unknown error' });
     }
   } else {
     res.setHeader('Allow', ['POST']);
