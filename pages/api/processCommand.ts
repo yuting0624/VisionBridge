@@ -33,11 +33,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       const [response] = await sessionClient.detectIntent(request);
-      console.log('Full Dialogflow response:', JSON.stringify(response, null, 2));
-
       const result = response.queryResult;
       if (result) {
-        console.log('QueryResult:', JSON.stringify(result, null, 2));
 
         let dialogflowResponse;
 

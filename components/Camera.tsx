@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden, useColorMode, Icon } from '@chakra-ui/react';
-import { FaImage, FaVideo, FaCamera, FaSync, FaMicrophone, FaMicrophoneSlash, FaPlay, FaStop } from 'react-icons/fa';
+import { FaImage, FaVideo, FaCamera, FaPlay, FaStop } from 'react-icons/fa';
 import { analyzeImageWithAI } from '../utils/imageAnalysis';
 import { speakText, stopSpeaking } from '../utils/speechSynthesis';
 import { useTranslation } from 'next-i18next'
 import Navigation from './Navigation';
-import { initializeSpeechRecognition, startSpeechRecognition, stopSpeechRecognition } from '../utils/speechRecognition';
+import { initializeSpeechRecognition, startNavigation} from '../utils/speechRecognition';
 import VoiceCommands from './VoiceCommands';
 
 const Camera: React.FC = () => {
@@ -21,6 +21,7 @@ const Camera: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [navigationDirections, setNavigationDirections] = useState<string | null>(null);
 
   const toggleCamera = async () => {
     if (stream) {
@@ -165,6 +166,11 @@ const Camera: React.FC = () => {
     }
   }, [t]);
 
+  const handleStartNavigation = useCallback(async (destination: string) => {
+    const directions = await startNavigation(destination);
+    setNavigationDirections(directions);
+  }, []);
+
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
@@ -199,6 +205,7 @@ const Camera: React.FC = () => {
       captureImage: captureImage,
       toggleMode: toggleMode,
       stopSpeaking: stopSpeaking,
+      startNavigation: handleStartNavigation,
       onTranscript: (transcript) => console.log('Transcript:', transcript),
       onError: (error) => console.error('Speech recognition error:', error),
       onListeningChange: (isListening) => console.log('Listening:', isListening),
@@ -244,6 +251,7 @@ const Camera: React.FC = () => {
         
         {/* 音声コマンド */}
         <VoiceCommands
+          onStartNavigation={handleStartNavigation}
           onStartCamera={startCamera}
           onStopCamera={stopEverything}
           onToggleAnalysis={toggleAnalysis}
@@ -311,7 +319,7 @@ const Camera: React.FC = () => {
           </Box>
         )}
         
-        <Navigation />
+        <Navigation directions={navigationDirections} />
       </VStack>
     </Container>
   );

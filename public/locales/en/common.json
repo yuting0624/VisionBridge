@@ -38,5 +38,8 @@
   "stopListening": "Stop Listening",
   "transcription": "Transcription",
   "speechRecognitionError": "Speech Recognition Error",
-  "lastCommand": "Last Command"
+  "lastCommand": "Last Command",
+  "navigation": "Navigation",
+  "directions": "Directions",
+  "noDirectionsAvailable": "No Directions Available"
 }

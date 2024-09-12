@@ -1,5 +1,4 @@
 const { VertexAI } = require('@google-cloud/vertexai');
-const { VideoIntelligenceServiceClient } = require('@google-cloud/video-intelligence');
 const cors = require('cors')({
   origin: true,
   credentials: true  
@@ -12,38 +11,30 @@ if (!projectId) {
   throw new Error('GCP_PROJECT_ID environment variable is not set');
 }
 
-const videoClient = new VideoIntelligenceServiceClient();
 const vertexAi = new VertexAI({ project: projectId, location: location });
 
-async function analyzeVideoStream(videoData) {
-  let inputContent;
-  if (typeof videoData === 'string') {
-    inputContent = videoData.split(',')[1]; 
-  } else if (videoData instanceof Buffer) {
-    inputContent = videoData.toString('base64');
-  } else {
-    throw new Error('Unsupported video data format');
-  }
+function createPromptForVideo(previousAnalysis) {
+  return `あなたは視覚障害者のための視覚サポートAIアシスタントです。以下の指示に従って、動画分析結果を簡潔で明確な音声フィードバックに変換してください：
 
-  const request = {
-    inputContent: inputContent,
-    features: ['OBJECT_TRACKING', 'LABEL_DETECTION', 'SHOT_CHANGE_DETECTION', 'PERSON_DETECTION'],
-  };
+1. 最も重要な情報（安全性、移動に関わる要素）を最優先で伝えてください。（例：交通信号、通行人、車両）。
+2. 環境の変化や新たに検出された物体に焦点を当て、前回の分析との違いを明確にしてください。（例：信号が青から赤に変わった）。
+3. 位置情報を含め、ユーザーの空間認識を助ける具体的な表現を使用してください（例：「2メートル先」「右手前」）。
+4. 各情報は15字以内の短文で伝えてください。
+5. 危険な状況や障害物を特に強調してください。
+6. 人物、テキスト、標識などの重要な視覚情報も含めてください。
+7. 安全に関わるため、ハルシネーションは絶対にしないでください。
+8. 動きのある物体の方向と速度を具体的に説明してください。
+9. シーンの急激な変化や重要なイベントを即座に報告してください。
 
-  try {
-    const [operation] = await videoClient.annotateVideo(request);
-    const [operationResult] = await operation.promise();
+前回の分析: "${previousAnalysis || '初回分析'}"
 
-    return {
-      objectAnnotations: operationResult.annotationResults[0].objectAnnotations,
-      labelAnnotations: operationResult.annotationResults[0].segmentLabelAnnotations,
-      shotChangeAnnotations: operationResult.annotationResults[0].shotAnnotations,
-      personDetections: operationResult.annotationResults[0].personDetections,
-    };
-  } catch (error) {
-    console.error("Error in video analysis:", error);
-    throw new Error(`Video analysis failed: ${error.message}`);
-  }
+例:
+'歩行者が右から左へ急ぎ足。
+2メートル先、椅子に注意。
+車が後方から接近中、要注意。
+画面右上、出口サイン点滅。'
+
+上記の指示に従って、与えられた動画を分析し、視覚障害者向けのリアルタイム音声フィードバックを生成してください。重要度順に箇条書きで出力してください。`;
 }
 
 exports.analyzeVideo = (req, res) => {
@@ -72,35 +63,42 @@ exports.analyzeVideo = (req, res) => {
       console.log('Received video data type:', typeof videoData);
       console.log('Received video data length:', videoData.length);
 
-      const analysisResult = await analyzeVideoStream(videoData);
-
-      const prompt = `
-      動画の分析結果を以下に示します。これを基に、以下の点に焦点を当てて簡潔に説明してください：
-      1. 検出された主要なオブジェクトとその動き
-      2. 潜在的な障害物や危険要素
-      3. シーンの変化や重要なイベント
-      4. 前回の分析からの主な変更点（ある場合）
-
-      回答は3-4の短い日本語の文で、シンプルで直接的な表現を使用してください。
-      例: '歩行者が右から左に移動しています。2メートル先に椅子があります。車が接近しているため注意が必要です。'
-
-      前回の分析: "${previousAnalysis || '初回分析'}"
-      動画分析結果: ${JSON.stringify(analysisResult)}
-      `;
-
       const generativeModel = vertexAi.preview.getGenerativeModel({
         model: model,
         generationConfig: {
-          maxOutputTokens: 2048,
-          temperature: 0.9,
-          topP: 1
+          maxOutputTokens: 8192,
+          temperature: 1,
+          topP: 0.95,
         },
+        safetySettings: [
+          {
+            'category': 'HARM_CATEGORY_HATE_SPEECH',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            'category': 'HARM_CATEGORY_HARASSMENT',
+            'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
+          }
+        ],
       });
 
+      const prompt = createPromptForVideo(previousAnalysis);
+
       const result = await generativeModel.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [
+          { role: 'user', parts: [{ text: prompt }] },
+          { role: 'user', parts: [{ inlineData: { mimeType: 'video/mp4', data: videoData.split(',')[1] } }] },
+        ],
       });
-      
+
       const response = await result.response;
       const generatedText = response.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No text generated';
 

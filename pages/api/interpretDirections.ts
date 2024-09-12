@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { VertexAI } from '@google-cloud/vertexai';
 
 const projectId = process.env.GCP_PROJECT_ID;
-const location = 'us-central1';
+const location = 'asia-northeast1';
 const model = 'gemini-1.5-flash-001';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,11 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const generativeModel = vertexAi.preview.getGenerativeModel({
         model: model,
-        generationConfig: {  // ここを変更
-          maxOutputTokens: 2048,  // ここも変更
+        generationConfig: {
+          maxOutputTokens: 2048,
           temperature: 0.2,
-          topP: 1,  // ここも変更
-          topK: 32,  // ここも変更
+          topP: 1,
+          topK: 32,
         },
       });
 
@@ -29,6 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         以下の経路情報を、視覚障害者にとって理解しやすい日本語の説明に変換してください。
         歩行者向けのナビゲーションとして、重要な曲がり角、目印、および注意点を含めてください。
         説明は簡潔で、順序立てて、安全性を重視したものにしてください。
+        各ステップは50文字以内で説明してください。
 
         経路情報:
         ${JSON.stringify(directionsData, null, 2)}

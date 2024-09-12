@@ -117,23 +117,6 @@ const Home: NextPage = () => {
             <Camera />
           </Box>
           
-          <Grid templateColumns={["repeat(1, 1fr)", "repeat(3, 1fr)"]} gap={6}>
-            <GridItem>
-              <Button leftIcon={<FaVolumeUp />} colorScheme="blue" width="100%" onClick={handleAudioGuide}>
-                {t('audioGuide')}
-              </Button>
-            </GridItem>
-            <GridItem>
-              <Button leftIcon={<FaMicrophone />} colorScheme="green" width="100%" onClick={handleVoiceInput}>
-                {t('voiceInput')}
-              </Button>
-            </GridItem>
-            <GridItem>
-              <Button leftIcon={<FaMapMarkerAlt />} colorScheme="purple" width="100%" onClick={handleGetLocation}>
-                {t('getLocation')}
-              </Button>
-            </GridItem>
-          </Grid>
         </VStack>
       </Container>
     </Box>

@@ -4,8 +4,26 @@ import { appWithTranslation } from 'next-i18next'
 import theme from '../styles/theme'
 import OfflineNotification from '../components/OfflineNotification'
 import Head from 'next/head'
+import { Libraries, useLoadScript } from '@react-google-maps/api'
+import { initializeDirectionsService } from '../utils/navigationHelper'
+import { useEffect, useMemo } from 'react'
+
+const libraries = ['places'];
 
 function MyApp({ Component, pageProps }: AppProps) {
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries: libraries as Libraries,
+  });
+
+  useEffect(() => {
+    if (isLoaded) {
+      initializeDirectionsService();
+    }
+  }, [isLoaded]);
+
+  if (!isLoaded) return <div>Loading...</div>;
+
   return (
     <ChakraProvider theme={theme}>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />

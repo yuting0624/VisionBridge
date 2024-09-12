@@ -3,7 +3,7 @@ import { PubSub } from '@google-cloud/pubsub';
 const pubsub = new PubSub();
 const videoAnalysisTopic = 'visionbridge-video-analysis';
 const audioAnalysisTopic = 'visionbridge-audio-analysis';
-const integratedDataTopic = 'visionbridge-integrated-data';
+const imageAnalysisTopic = 'visionbridge-image-analysis';
 
 export async function publishVideoAnalysis(data: any) {
   await publishToTopic(videoAnalysisTopic, data);
@@ -13,8 +13,8 @@ export async function publishAudioAnalysis(data: any) {
   await publishToTopic(audioAnalysisTopic, data);
 }
 
-export async function publishIntegratedData(data: any) {
-  await publishToTopic(integratedDataTopic, data);
+export async function publishImageAnalysis(data: any) {
+  await publishToTopic(imageAnalysisTopic, data);
 }
 
 async function publishToTopic(topicName: string, data: any) {

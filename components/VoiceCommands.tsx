@@ -12,6 +12,7 @@ interface VoiceCommandsProps {
   onCaptureImage: () => Promise<void>;
   onToggleMode: () => void;
   onStopSpeaking: () => void;
+  onStartNavigation: (destination: string) => Promise<void>;
 }
 
 const VoiceCommands: React.FC<VoiceCommandsProps> = (props) => {
@@ -34,6 +35,7 @@ const VoiceCommands: React.FC<VoiceCommandsProps> = (props) => {
       captureImage: props.onCaptureImage,
       toggleMode: props.onToggleMode,
       stopSpeaking: props.onStopSpeaking,
+      startNavigation: props.onStartNavigation,
     });
   }, [props]);
 

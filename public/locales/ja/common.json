@@ -36,5 +36,8 @@
   "stopListening": "音声認識停止",
   "transcription": "音声認識結果",
   "speechRecognitionError": "音声認識エラー",
-  "lastCommand": "直近のコマンド"
+  "lastCommand": "直近のコマンド",
+  "navigation": "道案内",
+  "directions": "案内情報",
+  "noDirectionsAvailable": "案内情報がまだありません"
 }

@@ -1,4 +1,5 @@
 import { speakText } from './speechSynthesis';
+import { getDirections, interpretDirectionsWithGemini } from './navigationHelper';
 
 interface SpeechRecognitionHandlers {
   startCamera: () => Promise<void>;
@@ -10,6 +11,7 @@ interface SpeechRecognitionHandlers {
   onTranscript: (transcript: string) => void;
   onError: (error: string) => void;
   onListeningChange: (isListening: boolean) => void;
+  startNavigation: (destination: string) => Promise<void>;
 }
 
 let isListening = false;
@@ -131,6 +133,14 @@ export const handleCommand = async (
         handlers.stopSpeaking();
         speakText(data.fulfillmentText);
         break;
+      case 'startNavigation':
+        if (data.parameters && data.parameters.destination) {
+          speakText(data.fulfillmentText);
+          await handlers.startNavigation(data.parameters.destination);
+        } else {
+          speakText('目的地が指定されていません。');
+        }
+        break;
       default:
         console.log('Unknown action:', data.action);
         speakText(data.fulfillmentText);
@@ -140,3 +150,34 @@ export const handleCommand = async (
     speakText('コマンドの処理中にエラーが発生しました');
   }
 };
+
+export async function startNavigation(destination: string): Promise<string> {
+  try {
+    console.log('Starting navigation to:', destination);
+    const currentPosition = await getCurrentPosition();
+    console.log('Current position:', currentPosition);
+    const directionsData = await getDirections(
+      `${currentPosition.latitude},${currentPosition.longitude}`,
+      destination
+    );
+    console.log('Directions data:', directionsData);
+    const interpretedDirections = await interpretDirectionsWithGemini(directionsData);
+    console.log('Interpreted directions:', interpretedDirections);
+    speakText(interpretedDirections);
+    return interpretedDirections;
+  } catch (error) {
+    console.error('Navigation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'ナビゲーションの開始中にエラーが発生しました';
+    speakText(errorMessage);
+    throw new Error(errorMessage);
+  }
+}
+
+function getCurrentPosition(): Promise<GeolocationCoordinates> {
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve(position.coords),
+      (error) => reject(error)
+    );
+  });
+}
