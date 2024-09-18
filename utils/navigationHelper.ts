@@ -60,13 +60,22 @@ async function searchPlaces(query: string): Promise<Partial<PlaceData>[]> {
 }
 
 export async function interpretDirectionsWithGemini(directionsData: google.maps.DirectionsResult): Promise<string> {
-  const response = await fetch(process.env.NEXT_PUBLIC_INTERPRET_DIRECTIONS_URL!, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ directionsData }),
-    credentials: 'include'
-  });
-  if (!response.ok) throw new Error('Failed to interpret directions');
-  const { interpretation } = await response.json();
-  return interpretation;
+  try {
+    const response = await fetch(process.env.NEXT_PUBLIC_INTERPRET_DIRECTIONS_URL!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directionsData }),
+      credentials: 'include'
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response:', errorText);
+      throw new Error(`Failed to interpret directions: ${response.status} ${response.statusText}. ${errorText}`);
+    }
+    const { interpretation } = await response.json();
+    return interpretation;
+  } catch (error) {
+    console.error('Error in interpretDirectionsWithGemini:', error);
+    throw error;
+  }
 }
