@@ -19,6 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
         config: {
           encoding: 'WEBM_OPUS' as const,
+          sampleRateHertz: 48000,
           languageCode: 'ja-JP',
         },
       };
@@ -31,7 +32,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(200).json({ transcription });
     } catch (error) {
       console.error('Error in speech recognition:', error);
-      res.status(500).json({ error: 'Error in speech recognition', details: error instanceof Error ? error.message : 'Unknown error' });
+      let errorMessage = '音声認識中にエラーが発生しました';
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+        if ('code' in error) {
+          errorMessage += ` (エラーコード: ${(error as any).code})`;
+        }
+      }
+      res.status(500).json({ error: errorMessage });
     }
   } else {
     res.setHeader('Allow', ['POST']);

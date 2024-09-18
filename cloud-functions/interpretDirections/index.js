@@ -55,6 +55,7 @@ exports.interpretDirections = async (req, res) => {
            - 注意が必要な箇所（交差点、段差など）
         3. 説明は簡潔で、順序立てて、安全性を重視したものにしてください。
         4. 各ステップは50文字以内で説明してください。
+        5. 安全に関わるため、ハルシネーションは絶対にしないでください。
 
         経路情報:
         ${JSON.stringify(processedData, null, 2)}

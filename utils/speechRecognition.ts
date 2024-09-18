@@ -28,7 +28,14 @@ export async function startSpeechRecognition() {
 
   try {
     if (!audioStream) {
-      audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 48000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      });
     }
 
     mediaRecorder = new MediaRecorder(audioStream);
