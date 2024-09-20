@@ -39,13 +39,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let dialogflowResponse;
 
         if (result.match && result.match.intent) {
-          // インテントがマッチした場合の処理（既存のコード）
-          // ...
+ 
         } else {
-          // NO_MATCHの場合の処理
-          console.log('No intent matched');
-          
-          // ジェネレーターの応答を解析
+ 
           if (result.responseMessages && result.responseMessages.length > 0) {
             for (const message of result.responseMessages) {
               if (message.text && message.text.text && message.text.text.length > 0) {
