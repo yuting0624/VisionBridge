@@ -1,4 +1,4 @@
-import { speakText } from './speechSynthesis';
+import { speakText, stopSpeaking } from './speechSynthesis';
 import { getDirections, interpretDirectionsWithGemini } from './navigationHelper';
 
 interface SpeechRecognitionHandlers {
@@ -55,7 +55,7 @@ export async function startSpeechRecognition() {
       reader.onloadend = async () => {
         const base64Audio = reader.result as string;
         try {
-          const response = await fetch('/api/tts', {
+          const response = await fetch('/api/stt', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -114,47 +114,47 @@ export const handleCommand = async (
     switch (data.action) {
       case 'startCamera':
         await handlers.startCamera();
-        speakText(data.fulfillmentText);
+        await speakText(data.fulfillmentText);
         break;
       case 'stopCamera':
         handlers.stopCamera();
-        speakText(data.fulfillmentText);
+        await speakText(data.fulfillmentText);
         break;
       case 'captureImage':
         await handlers.captureImage();
-        //speakText(data.fulfillmentText);
+        //await speakText(data.fulfillmentText);
         break;
       case 'startAnalysis':
         handlers.toggleAnalysis();
-        //speakText(data.fulfillmentText);
+        //await speakText(data.fulfillmentText);
         break;
       case 'stopAnalysis':
         handlers.toggleAnalysis();
-        //speakText(data.fulfillmentText);
+        //await speakText(data.fulfillmentText);
         break;
       case 'toggleMode':
         handlers.toggleMode();
-        speakText(data.fulfillmentText);
+        await speakText(data.fulfillmentText);
         break;
       case 'stopSpeaking':
-        handlers.stopSpeaking();
-        speakText(data.fulfillmentText);
+        stopSpeaking();
+        await speakText(data.fulfillmentText);
         break;
       case 'startNavigation':
         if (data.parameters && data.parameters.destination) {
-          speakText(data.fulfillmentText);
+          await speakText(data.fulfillmentText);
           await handlers.startNavigation(data.parameters.destination);
         } else {
-          speakText('目的地が指定されていません。');
+          await speakText('目的地が指定されていません。');
         }
         break;
       default:
         console.log('Unknown action:', data.action);
-        speakText(data.fulfillmentText);
+        await speakText(data.fulfillmentText);
     }
   } catch (error) {
     console.error('Error processing command:', error);
-    speakText('コマンドの処理中にエラーが発生しました');
+    await speakText('コマンドの処理中にエラーが発生しました');
   }
 };
 
@@ -175,7 +175,7 @@ export async function startNavigation(destination: string): Promise<string> {
   } catch (error) {
     console.error('Navigation error:', error);
     const errorMessage = error instanceof Error ? error.message : 'ナビゲーションの開始中にエラーが発生しました';
-    speakText(errorMessage);
+    await speakText(errorMessage);
     throw new Error(errorMessage);
   }
 }

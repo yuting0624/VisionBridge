@@ -1,5 +1,5 @@
 {
-  "title": "VisionBridge",
+  "title": "Vision Bridge",
   "startCamera": "カメラ開始",
   "stopCamera": "カメラ停止",
   "startAnalysis": "分析開始",
@@ -8,7 +8,7 @@
   "audioGuide": "音声ガイド",
   "voiceInput": "音声入力",
   "getLocation": "現在地取得",
-  "audioGuideText": "VisionBridgeへようこそ。このアプリは視覚障害者の方々のために設計されました。カメラを使って周囲の状況を分析し、音声でフィードバックを提供します。",
+  "audioGuideText": "Vision Bridgeへようこそ。このアプリは視覚障害者の方々のために設計されました。カメラを使って周囲の状況を分析し、音声でフィードバックを提供します。",
   "offlineMessage": "現在オフラインです。一部の機能が利用できない可能性があります。",
   "navigationInfo": "ナビ情報",
   "loading": "ロード中",
@@ -39,5 +39,15 @@
   "lastCommand": "直近のコマンド",
   "navigation": "道案内",
   "directions": "案内情報",
-  "noDirectionsAvailable": "案内情報がまだありません"
+  "noDirectionsAvailable": "案内情報がまだありません",
+  "appTitle": "Vision Bridge",
+  "voiceCommandInstruction": "音声コマンドで操作できます。",
+  "welcomeMessage": "Vision Bridgeへようこそ。音声コマンドで操作できます。音声認識開始ボタンをタップして使い方を聞いてください。",
+  "helpButtonLabel": "ヘルプを表示",
+  "helpButtonText": "使用ガイド",
+  "helpMessage": "Vision Bridgeへようこそ。音声コマンドで操作できます。Vision Bridgeの主な機能は、カメラ操作、音声コマンド、画像分析、ナビゲーションです。詳しい使い方を知りたい場合は、音声認識開始ボタンをタップして使い方を聞いてください。例えば、「カメラの使い方を教えて」と話しかけてください。",
+  "initializeAudio": "音声を初期化",
+  "touchToInitialize": "タッチして音声を有効にしてください",
+  "initialize": "初期化",
+  "audioInitialized": "音声が初期化されました"
 }

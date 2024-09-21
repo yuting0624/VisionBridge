@@ -1,5 +1,5 @@
 {
-  "title": "VisionBridge",
+  "title": "Vision Bridge",
   "startCamera": "Start Camera",
   "stopCamera": "Stop Camera",
   "startAnalysis": "Start Analysis",
@@ -41,5 +41,12 @@
   "lastCommand": "Last Command",
   "navigation": "Navigation",
   "directions": "Directions",
-  "noDirectionsAvailable": "No Directions Available"
+  "noDirectionsAvailable": "No Directions Available",
+  "appTitle": "Vision Bridge",
+  "voiceCommandInstruction": "You can operate with voice commands.",
+  "helpMessage": "The main features of Vision Bridge are camera operation, voice commands, image analysis, and navigation. Simply tap the voice recognition start button and ask any questions. For example, say 'How to start the camera'.",
+  "helpButtonLabel": "Show Help",
+  "helpButtonText": "Help"
+
 }
+

@@ -29,11 +29,12 @@ function MyApp({ Component, pageProps }: AppProps) {
     <ChakraProvider theme={theme}>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
       <Head>
-        <title>VisionBridge - AIによる視覚支援</title>
+        <title>Vision Bridge - AIによる視覚支援</title>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="images/logo.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="images/logo.png" />
         <link rel="manifest" href="/site.webmanifest" />
+
       </Head>
       <Component {...pageProps} />
       <OfflineNotification />

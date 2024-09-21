@@ -33,7 +33,7 @@ importers:
         specifier: ^6.7.0
         version: 6.7.0
       '@google-cloud/text-to-speech':
-        specifier: ^5.3.0
+        specifier: ^5.4.0
         version: 5.4.0
       '@google-cloud/translate':
         specifier: ^8.3.0
@@ -93,6 +93,9 @@ importers:
       '@types/formidable':
         specifier: ^3.4.5
         version: 3.4.5
+      '@types/google-cloud__text-to-speech':
+        specifier: ^0.5.2
+        version: 0.5.2
       '@types/node':
         specifier: ^22.1.0
         version: 22.5.4
@@ -1505,6 +1508,9 @@ packages:
 
   '@types/glob@7.2.0':
     resolution: {integrity: sha512-ZUxbzKl0IfJILTS6t7ip5fQQM/J3TJYubDm3nMbgubNNYS62eXeUpoLUC8/7fJNiFYHTrGPQn7hspDUzIHX3UA==}
+
+  '@types/google-cloud__text-to-speech@0.5.2':
+    resolution: {integrity: sha512-qAdWgvWXZPPYRsqTAU801YeK0j7KkeGaZCRROmRmhhFOU3I3DcxqS4lTZnRLeEszTL4TdUfSoyEvo+n3Rj+D3g==}
 
   '@types/google.maps@3.55.2':
     resolution: {integrity: sha512-JcTwzkxskR8DN/nnX96Pie3gGN3WHiPpuxzuQ9z3516o1bB243d8w8DHUJ8BohuzoT1o3HUFta2ns/mkZC8KRw==}
@@ -5275,6 +5281,10 @@ snapshots:
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
+      '@types/node': 22.5.4
+
+  '@types/google-cloud__text-to-speech@0.5.2':
+    dependencies:
       '@types/node': 22.5.4
 
   '@types/google.maps@3.55.2': {}

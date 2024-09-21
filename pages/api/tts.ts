@@ -1,43 +1,42 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { SpeechClient } from '@google-cloud/speech';
+import textToSpeech from '@google-cloud/text-to-speech';
 
-const speechClient = new SpeechClient({
+const client = new textToSpeech.TextToSpeechClient({
   keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
-      const { audio } = req.body;
-      if (!audio) {
-        return res.status(400).json({ error: 'No audio data provided' });
+      const { text, rate = 1.3, volume = 1.0 } = req.body;
+      if (!text) {
+        return res.status(400).json({ error: 'No text provided' });
       }
 
       const request = {
-        audio: {
-          content: audio,
-        },
-        config: {
-          encoding: 'WEBM_OPUS' as const,
-          sampleRateHertz: 48000,
-          languageCode: 'ja-JP',
+        input: { text },
+        voice: { languageCode: 'ja-JP', name: 'ja-JP-Neural2-B', ssmlGender: 'FEMALE' as const },
+        audioConfig: { 
+          audioEncoding: 'MP3' as const,
+          speakingRate: rate,
+          volumeGainDb: (volume - 1) * 6, // Convert 0-1 range to dB
         },
       };
 
-      const [response] = await speechClient.recognize(request);
-      const transcription = response.results
-        ?.map(result => result.alternatives?.[0]?.transcript)
-        .join('\n');
+      const [response] = await client.synthesizeSpeech(request);
+      const audioContent = response.audioContent;
 
-      res.status(200).json({ transcription });
+      if (!audioContent) {
+        throw new Error('No audio content received from Text-to-Speech API');
+      }
+
+      res.setHeader('Content-Type', 'audio/mpeg');
+      res.send(Buffer.from(audioContent));
     } catch (error) {
-      console.error('Error in speech recognition:', error);
-      let errorMessage = '音声認識中にエラーが発生しました';
+      console.error('Error in text-to-speech:', error);
+      let errorMessage = 'テキスト読み上げ中にエラーが発生しました';
       if (error instanceof Error) {
         errorMessage += `: ${error.message}`;
-        if ('code' in error) {
-          errorMessage += ` (エラーコード: ${(error as any).code})`;
-        }
       }
       res.status(500).json({ error: errorMessage });
     }
