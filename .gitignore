@@ -4,3 +4,4 @@ node_modules
 
 # Ignore .env.local file
 .env.local
+.venv

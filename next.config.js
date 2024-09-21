@@ -32,3 +32,21 @@ module.exports = withPWA({
 })
 
 module.exports = nextConfig
+
+module.exports = {
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        fs: false,
+      };
+    }
+    return config;
+  },
+};
+
+module.exports = {
+  output: 'standalone'
+}
