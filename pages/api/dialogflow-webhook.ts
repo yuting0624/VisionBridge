@@ -17,7 +17,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           action: 'startCamera',
         });
         break;
-      // 他のインテントのケースをここに追加
       default:
         console.log('Unknown intent:', intent);
         res.status(200).json({ 
