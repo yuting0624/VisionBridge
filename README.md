@@ -6,6 +6,7 @@
 
 VisionBridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェクトで、最新の AI 技術を活用して視覚障がい者の日常生活をサポートする革新的なアシスタントアプリケーションです。
 
+
 [![発表動画](https://img.youtube.com/vi/XHFn-MErwkU/0.jpg)](https://youtu.be/XHFn-MErwkU)
 [詳細なプロジェクト概要はこちら](ProjectOverview.md)
 
