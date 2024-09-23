@@ -1,239 +1,437 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Box, Button, VStack, AspectRatio, Text, Select, Slider, SliderTrack, SliderFilledTrack, SliderThumb, Spinner, Alert, AlertIcon, VisuallyHidden } from '@chakra-ui/react';
-import { analyzeImageWithGemini } from '../utils/imageAnalysis';
-import { speakText, stopSpeaking, setSpeechRate, setSpeechVolume } from '../utils/speechSynthesis';
-import { provideNavigation, provideDetailedNavigation, updateCurrentPosition } from '../utils/navigation';
-import { initializeSpeechRecognition, addVoiceCommand } from '../utils/speechRecognition';
-import { UserSettings, saveUserSettings, loadUserSettings } from '../utils/userSettings';
-import { resizeAndCompressImage } from '../utils/imageProcessing';
-import { debounce } from '../utils/apiHelper';
+import { Box, Button, VStack, HStack, Container, Center, Text, Spinner, Alert, AlertIcon, VisuallyHidden, useColorMode, Icon, Modal, ModalOverlay, ModalContent, ModalHeader, ModalBody, ModalFooter } from '@chakra-ui/react';
+import { FaImage, FaVideo, FaCamera, FaPlay, FaStop, FaQuestionCircle } from 'react-icons/fa';
+import { analyzeImageWithAI } from '../utils/imageAnalysis';
+import { speakText, stopSpeaking, initializeAudio, getAudioContext, isAudioInitialized } from '../utils/speechSynthesis';
+import { useTranslation } from 'next-i18next'
+import Navigation from './Navigation';
+
+import { initializeSpeechRecognition, startNavigation, startSpeechRecognition } from '../utils/speechRecognition';
+import VoiceCommands from './VoiceCommands';
 
 const Camera: React.FC = () => {
+  const { t } = useTranslation('common')
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isVideoMode, setIsVideoMode] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
-  const [previousAnalysis, setPreviousAnalysis] = useState<string | null>(null);
-  const [isFirstAnalysis, setIsFirstAnalysis] = useState(true);
-  const [settings, setSettings] = useState<UserSettings>(loadUserSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [navigationInfo, setNavigationInfo] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [navigationDirections, setNavigationDirections] = useState<string | null>(null);
+  const [audioInitialized, setAudioInitialized] = useState(false);
+  const [showInitModal, setShowInitModal] = useState(true);
 
-  const handleNavigation = useCallback(() => {
-    if (analysisResult) {
-      const navigation = provideDetailedNavigation(analysisResult);
-      setNavigationInfo(navigation);
+  const toggleCamera = async () => {
+    if (stream) {
+      stopEverything();
+      speakText(t('cameraStopped'));
+    } else {
+      await startCamera();
+      speakText(t('cameraStarted'));
     }
-  }, [analysisResult]);
-
-  useEffect(() => {
-    // 実際の実装ではGeolocation APIを使用
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        updateCurrentPosition(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => console.error("Geolocation error:", error),
-      { enableHighAccuracy: true }
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
-  
-  useEffect(() => {
-    setSettings(loadUserSettings());
-    initializeSpeechRecognition();
-    addVoiceCommand('開始', startAnalysis);
-    addVoiceCommand('停止', stopAnalysis);
-    addVoiceCommand('ナビゲーション', () => provideNavigation(analysisResult || ''));
-  }, []);
-
-  useEffect(() => {
-    setSpeechRate(settings.speechRate);
-    setSpeechVolume(settings.speechVolume);
-    saveUserSettings(settings);
-  }, [settings]);
-
-  const handleSettingsChange = (key: keyof UserSettings, value: number) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
   };
 
   const startCamera = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
       setStream(mediaStream);
     } catch (error) {
-      console.error("Error accessing camera:", error);
+      console.error("カメラへのアクセスエラー:", error);
+      setErrorWithVoice(t('cameraAccessError'));
     }
   };
 
-  const stopCamera = () => {
+  const stopEverything = () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
       setStream(null);
     }
-    stopAnalysis();
-  };
-
-  const startAnalysis = () => {
-    setIsAnalyzing(true);
-    setIsFirstAnalysis(true);
-  };
-
-  const stopAnalysis = () => {
     setIsAnalyzing(false);
-    setPreviousAnalysis(null);
-    setIsFirstAnalysis(true);
+    setIsVideoMode(false);
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
   };
 
-  const debouncedAnalyzeImage = useCallback(
-  debounce(async (imageDataUrl: string) => {
-    try {
-      const result = await analyzeImageWithGemini(imageDataUrl, isFirstAnalysis ? null : previousAnalysis);
-      setAnalysisResult(result);
-       if (isFirstAnalysis || (result !== "変更なし" && result !== "")) {
-          speakText(result);
-          provideDetailedNavigation(result);
-        }
-        
-        setPreviousAnalysis(result);
-        setIsFirstAnalysis(false);
-    } catch (error) {
-      console.error("Error analyzing image:", error);
-        setError("画像分析中にエラーが発生しました");
-        speakText("画像分析中にエラーが発生しました");
-      } finally {
-        setIsLoading(false);
+  const toggleAnalysis = () => {
+    if (isAnalyzing) {
+      setIsAnalyzing(false);
+      if (isVideoMode) {
+        stopVideoRecording();
+      }
+      speakText(t('analysisStopped'));
+    } else {
+      setIsAnalyzing(true);
+      if (isVideoMode) {
+        startVideoRecording();
+      }
+      speakText(t('analysisStarted'));
     }
-  }, 300),
-  [isFirstAnalysis, previousAnalysis]
-);
+  };
+
+  const startVideoRecording = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      mediaRecorderRef.current = new MediaRecorder(videoRef.current.srcObject as MediaStream);
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunksRef.current.push(event.data);
+        }
+      };
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: 'video/webm' });
+        analyzeVideo(blob);
+        chunksRef.current = [];
+      };
+      mediaRecorderRef.current.start();
+    }
+  };
+
+  const stopVideoRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
+
+  const analyzeVideo = async (videoBlob: Blob) => {
+    try {
+      setIsLoading(true); 
+      const response = await analyzeImageWithAI(videoBlob, 'video', null);
+      console.log("Video analysis result:", response);
+      setAnalysisResult(response); 
+      speakText(response); 
+    } catch (error) {
+      console.error("Error analyzing video:", error);
+      setErrorWithVoice(t('videoAnalysisError'));
+    } finally {
+      setIsLoading(false); 
+    }
+  };
 
   const captureAndAnalyzeImage = useCallback(async () => {
-     if (videoRef.current) {
-    setIsLoading(true);
-    setError(null);
-    const canvas = document.createElement('canvas');
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-    const imageDataUrl = canvas.toDataURL('image/jpeg');
-    
-    try {
-      const compressedImageDataUrl = await resizeAndCompressImage(imageDataUrl);
-      await debouncedAnalyzeImage(compressedImageDataUrl);
-       
-      } catch (error) {
-        console.error("Error capturing or analyzing image:", error);
-        setError("画像のキャプチャまたは分析中にエラーが発生しました");
-        setIsLoading(false);
+    if (videoRef.current && canvasRef.current) {
+      setIsLoading(true);
+      setError(null);
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
+        
+        try {
+          const result = await analyzeImageWithAI(imageDataUrl, 'normal', null);
+          setAnalysisResult(result);
+          speakText(result);
+        } catch (error) {
+          console.error("Error analyzing image:", error);
+          setErrorWithVoice(t('imageAnalysisError'));
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
-  }, [debouncedAnalyzeImage]);
+  }, [t]);
+
+  const captureImage = useCallback(async () => {
+    if (videoRef.current && canvasRef.current) {
+      setIsLoading(true);
+      setError(null);
+      const context = canvasRef.current.getContext('2d');
+      if (context) {
+        canvasRef.current.width = videoRef.current.videoWidth;
+        canvasRef.current.height = videoRef.current.videoHeight;
+        context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+        const imageDataUrl = canvasRef.current.toDataURL('image/jpeg');
+        setCapturedImage(imageDataUrl);
+        speakText(t('imageCaptured'));
+        
+        try {
+          const result = await analyzeImageWithAI(imageDataUrl, 'detailed', null);
+          setAnalysisResult(result);
+          speakText(result);
+        } catch (error) {
+          console.error("Error analyzing image:", error);
+          setErrorWithVoice(t('imageAnalysisError'));
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  }, [t]);
+
+  const handleStartNavigation = useCallback(async (destination: string) => {
+    const directions = await startNavigation(destination);
+    setNavigationDirections(directions);
+  }, []);
+
+  const handleHelpRequest = async () => {
+    try {
+      await getAudioContext();
+      await speakText(t('helpMessage'));
+    } catch (error) {
+      console.error('Help request failed:', error);
+      setErrorWithVoice(t('helpRequestError'));
+    }
+  };
+
+  useEffect(() => {
+    const handleUserInteraction = async () => {
+      try {
+        console.log('User interaction detected');
+        await getAudioContext();
+        console.log('AudioContext ensured after user interaction');
+        document.removeEventListener('click', handleUserInteraction);
+      } catch (error) {
+        console.error('Failed to initialize audio context:', error);
+      }
+    };
+
+    document.addEventListener('click', handleUserInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+    };
+  }, []);
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout;
 
-    if (isAnalyzing) {
+    if (isAnalyzing && !isVideoMode) {
       intervalId = setInterval(() => {
         captureAndAnalyzeImage();
-      }, settings.captureInterval);
+      }, 7000); 
     }
 
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [isAnalyzing, settings.captureInterval, captureAndAnalyzeImage]);
+  }, [isAnalyzing, isVideoMode, captureAndAnalyzeImage]);
 
+  const toggleMode = () => {
+    setIsVideoMode(!isVideoMode);
+    setIsAnalyzing(false);
+  };
+
+  const { colorMode } = useColorMode();
+
+  const setErrorWithVoice = (errorMessage: string) => {
+    setError(errorMessage);
+    speakText(errorMessage);
+  };
+
+  const handleSpeechRecognitionResult = async (transcript: string) => {
+    console.log('Transcript:', transcript);
+    try {
+      await getAudioContext();
+    } catch (error) {
+      console.error('音声認識結果の処理中にエラーが発生しました:', error);
+      setErrorWithVoice(t('speechRecognitionError'));
+    }
+  };
+
+  const handleInitAudio = async () => {
+    try {
+      await initializeAudio();
+      setAudioInitialized(true);
+      setShowInitModal(false);
+      await speakText(t('audioInitialized'));
+    } catch (error) {
+      console.error('Failed to initialize audio:', error);
+      // エラーメッセージを表示するなどの処理を追加
+    }
+  };
+
+  useEffect(() => {
+    const initAudio = async () => {
+      if (!isAudioInitialized()) {
+        setShowInitModal(true);
+      } else {
+        setAudioInitialized(true);
+        setShowInitModal(false);
+      }
+    };
+
+    initAudio();
+
+    initializeSpeechRecognition({
+      startCamera: startCamera,
+      stopCamera: stopEverything,
+      toggleAnalysis: toggleAnalysis,
+      captureImage: captureImage,
+      toggleMode: toggleMode,
+      stopSpeaking: stopSpeaking,
+      startNavigation: handleStartNavigation,
+      onTranscript: handleSpeechRecognitionResult,
+      onError: (error) => console.error('Speech recognition error:', error),
+      onListeningChange: (isListening) => console.log('Listening:', isListening),
+    });
+
+    // ユーザーインタラクションを検出し、音声コンテキストを再開する
+    const resumeAudioContext = () => {
+      if (audioInitialized) {
+        initializeAudio();
+      }
+    };
+
+    document.addEventListener('touchstart', resumeAudioContext);
+    document.addEventListener('click', resumeAudioContext);
+
+    return () => {
+      document.removeEventListener('touchstart', resumeAudioContext);
+      document.removeEventListener('click', resumeAudioContext);
+      stopSpeaking();
+    };
+  }, [audioInitialized]);
 
   return (
-     <VStack spacing={4} align="stretch">
-      <AspectRatio maxW="100%" ratio={16/9}>
-        <video ref={videoRef} autoPlay playsInline aria-label="カメラビュー" />
-      </AspectRatio>
-      <Box>
-        <Button onClick={startCamera} mr={2} isDisabled={!!stream || isLoading} aria-label="カメラ開始">
-          カメラ開始
-        </Button>
-        <Button onClick={stopCamera} mr={2} isDisabled={!stream || isLoading} aria-label="カメラ停止">
-          カメラ停止
-        </Button>
-        <Button onClick={startAnalysis} mr={2} isDisabled={!stream || isAnalyzing || isLoading} aria-label="分析開始">
-          分析開始
-        </Button>
-        <Button onClick={stopAnalysis} isDisabled={!isAnalyzing || isLoading} aria-label="分析停止">
-          分析停止
-        </Button>
-        <Button onClick={stopSpeaking} colorScheme="red" isDisabled={isLoading} aria-label="読み上げ停止">
-          読み上げ停止
-        </Button>
-      </Box>
-      {isLoading && (
-        <Box aria-live="polite" aria-busy="true">
-          <Spinner />
-          <VisuallyHidden>読み込み中</VisuallyHidden>
+    <Container maxW="container.xl" centerContent p={4}>
+      <VStack spacing={6} align="stretch" width="100%">
+        <Text mt={4} fontWeight="bold" textAlign="center" aria-live="polite">
+          {t('appTitle')}
+        </Text>
+        
+        <Text textAlign="center" fontSize="sm" aria-live="polite">
+          {t('voiceCommandInstruction')}
+        </Text>
+
+        {/* カメラビュー */}
+        <Box position="relative" width="100%" paddingTop="56.25%">
+          <video
+            ref={videoRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+            autoPlay
+            playsInline
+            aria-label={t('cameraView')}
+          />
+          <canvas
+            ref={canvasRef}
+            style={{ display: 'none' }}
+          />
+          <Box position="absolute" top={2} left={2} bg={colorMode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'} p={2} borderRadius="md">
+            <Icon as={isVideoMode ? FaVideo : FaImage} color={colorMode === 'dark' ? 'white' : 'black'} />
+          </Box>
+          {(isAnalyzing || isLoading) && (
+            <Box position="absolute" top={2} right={2} bg={colorMode === 'dark' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'} p={2} borderRadius="md">
+              <Spinner size="sm" color={colorMode === 'dark' ? 'white' : 'black'} />
+            </Box>
+          )}
         </Box>
-      )}
-      {error && (
-        <Alert status="error" aria-live="assertive">
-          <AlertIcon />
-          {error}
-        </Alert>
-      )}
-      {analysisResult && (
-        <Box mt={4} p={4} borderWidth={1} borderRadius="md" aria-live="polite">
-          <Text fontWeight="bold">分析結果:</Text>
-          <Text>{analysisResult}</Text>
-        </Box>
-      )}
-      <Text>Capture Interval</Text>
-      <Select
-        value={settings.captureInterval}
-        onChange={(e) => handleSettingsChange('captureInterval', Number(e.target.value))}
-      >
-        <option value={3000}>Every 3 seconds</option>
-        <option value={5000}>Every 5 seconds</option>
-        <option value={10000}>Every 10 seconds</option>
-      </Select>
-      <Text>Speech Rate</Text>
-      <Slider
-        min={0.5}
-        max={2}
-        step={0.1}
-        value={settings.speechRate}
-        onChange={(v) => handleSettingsChange('speechRate', v)}
-      >
-        <SliderTrack>
-          <SliderFilledTrack />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
-      <Text>Speech Volume</Text>
-      <Slider
-        min={0}
-        max={1}
-        step={0.1}
-        value={settings.speechVolume}
-        onChange={(v) => handleSettingsChange('speechVolume', v)}
-      >
-        <SliderTrack>
-          <SliderFilledTrack />
-        </SliderTrack>
-        <SliderThumb />
-      </Slider>
-      <Button onClick={handleNavigation} isDisabled={!analysisResult || isLoading}>
-        詳細ナビ
-      </Button>
-       {navigationInfo && (
-        <Box mt={4} p={4} borderWidth={1} borderRadius="md">
-          <Text fontWeight="bold">ナビゲーション情報:</Text>
-          <Text>{navigationInfo}</Text>
-        </Box>
-      )}
-    </VStack>
+        
+        {/* ヘルプボタン */}
+        <Button
+          onClick={handleHelpRequest}
+          colorScheme="teal"
+          leftIcon={<Icon as={FaQuestionCircle} />}
+          aria-label={t('helpButtonLabel')}
+        >
+          {t('helpButtonText')}
+        </Button>
+
+        {/* 音声コマンド */}
+        <VoiceCommands
+          onStartNavigation={handleStartNavigation}
+          onStartCamera={startCamera}
+          onStopCamera={stopEverything}
+          onToggleAnalysis={toggleAnalysis}
+          onCaptureImage={captureImage}
+          onToggleMode={toggleMode}
+          onStopSpeaking={stopSpeaking}
+        />
+        
+        {/* カメラコントロール */}
+        <HStack justify="center" wrap="wrap" spacing={4}>
+          <Button 
+            onClick={toggleCamera} 
+            colorScheme={stream ? "red" : "green"}
+            leftIcon={<Icon as={stream ? FaStop : FaPlay} />}
+            aria-label={stream ? t('stopCamera') : t('startCamera')}
+          >
+            {stream ? t('stopCamera') : t('startCamera')}
+          </Button>
+          <Button 
+            onClick={toggleAnalysis} 
+            isDisabled={!stream} 
+            colorScheme={isAnalyzing ? "red" : "green"}
+            leftIcon={<Icon as={isAnalyzing ? FaStop : FaPlay} />}
+            aria-label={isAnalyzing ? t('stopAnalysis') : t('startAnalysis')}
+          >
+            {isAnalyzing ? t('stopAnalysis') : t('startAnalysis')}
+          </Button>
+          <Button 
+            onClick={toggleMode} 
+            isDisabled={!stream || isAnalyzing}
+            leftIcon={<Icon as={isVideoMode ? FaImage : FaVideo} />}
+            aria-label={isVideoMode ? t('switchToImageMode') : t('switchToVideoMode')}
+          >
+            {isVideoMode ? t('switchToImageMode') : t('switchToVideoMode')}
+          </Button>
+          <Button
+            onClick={captureImage}
+            isDisabled={!stream || isLoading}
+            colorScheme="blue"
+            leftIcon={<Icon as={FaCamera} />}
+            aria-label={t('captureImage')}
+          >
+            {t('captureImage')}
+          </Button>
+        </HStack>
+        
+        {isLoading && (
+          <Center aria-live="polite" aria-busy="true">
+            <Spinner />
+            <VisuallyHidden>{t('loading')}</VisuallyHidden>
+          </Center>
+        )}
+        
+        {error && (
+          <Alert status="error" aria-live="assertive">
+            <AlertIcon />
+            {error}
+          </Alert>
+        )}
+        
+        {analysisResult && (
+          <Box mt={4} p={4} borderWidth={1} borderRadius="md" aria-live="polite">
+            <Text fontWeight="bold">{t('analysisResult')}:</Text>
+            <Text>{analysisResult}</Text>
+          </Box>
+        )}
+        
+        <Navigation directions={navigationDirections} />
+      </VStack>
+      
+      <Modal isOpen={showInitModal} onClose={() => {}}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{t('initializeAudio')}</ModalHeader>
+          <ModalBody>
+            {t('touchToInitialize')}
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" onClick={handleInitAudio}>
+              {t('initialize')}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Container>
   );
 };
 

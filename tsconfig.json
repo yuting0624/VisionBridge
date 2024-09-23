@@ -17,12 +17,14 @@
     "isolatedModules": true,
     "incremental": true,
     "allowJs": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "typeRoots": ["./node_modules/@types", "./types"]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    "types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

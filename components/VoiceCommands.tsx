@@ -1,65 +1,81 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Text, Button } from '@chakra-ui/react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useTranslation } from 'next-i18next';
+import { speakText } from '../utils/speechSynthesis';
+import { handleCommand, initializeSpeechRecognition, startSpeechRecognition, stopSpeechRecognition } from '../utils/speechRecognition';
+import { Button, Text, VStack, Icon, useColorModeValue } from '@chakra-ui/react';
+import { FaMicrophone, FaMicrophoneSlash } from 'react-icons/fa';
 
-const VoiceCommands: React.FC = () => {
+interface VoiceCommandsProps {
+  onStartCamera: () => Promise<void>;
+  onStopCamera: () => void;
+  onToggleAnalysis: () => void;
+  onCaptureImage: () => Promise<void>;
+  onToggleMode: () => void;
+  onStopSpeaking: () => void;
+  onStartNavigation: (destination: string) => Promise<void>;
+}
+
+const VoiceCommands: React.FC<VoiceCommandsProps> = (props) => {
+  const { t } = useTranslation('common');
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const buttonBg = useColorModeValue('blue.500', 'blue.200');
+  const buttonColor = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
-    let recognition: any = null;
-
-    if ('webkitSpeechRecognition' in window) {
-      recognition = new (window as any).webkitSpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-
-      recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((result) => result.transcript)
-          .join('');
-
-        setTranscript(transcript);
-        handleCommand(transcript);
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-      };
-    }
-
-    return () => {
-      if (recognition) recognition.stop();
-    };
-  }, []);
-
-  const handleCommand = (command: string) => {
-    const lowerCommand = command.toLowerCase();
-    if (lowerCommand.includes('capture image')) {
-      // Trigger image capture
-    } else if (lowerCommand.includes('start navigation')) {
-      // Start navigation
-    }
-    // Add more commands as needed
-  };
+    initializeSpeechRecognition({
+      onTranscript: (text: string) => setTranscript(text),
+      onError: (err: string) => setError(err),
+      onListeningChange: (listening: boolean) => setIsListening(listening),
+      startCamera: props.onStartCamera,
+      stopCamera: props.onStopCamera,
+      toggleAnalysis: props.onToggleAnalysis,
+      captureImage: props.onCaptureImage,
+      toggleMode: props.onToggleMode,
+      stopSpeaking: props.onStopSpeaking,
+      startNavigation: props.onStartNavigation,
+    });
+  }, [props]);
 
   const toggleListening = () => {
-    setIsListening(!isListening);
-    if (!isListening) {
-      (window as any).webkitSpeechRecognition().start();
+    if (isListening) {
+      stopSpeechRecognition();
+      setIsListening(false);
     } else {
-      (window as any).webkitSpeechRecognition().stop();
+      startSpeechRecognition();
+      setIsListening(true);
     }
   };
 
   return (
-    <Box>
-      <Text fontSize="xl" fontWeight="bold">Voice Commands</Text>
-      <Button onClick={toggleListening}>
-        {isListening ? 'Stop Listening' : 'Start Listening'}
+    <VStack spacing={4} align="stretch">
+      <Button
+        onClick={toggleListening}
+        size="lg"
+        leftIcon={<Icon as={isListening ? FaMicrophoneSlash : FaMicrophone} />}
+        bg={buttonBg}
+        color={buttonColor}
+        _hover={{ opacity: 0.8 }}
+        _active={{ opacity: 0.6 }}
+        borderRadius="full"
+        boxShadow="lg"
+        transition="all 0.2s"
+      >
+        {isListening ? t('stopListening') : t('startListening')}
       </Button>
-      <Text mt={2}>Transcript: {transcript}</Text>
-    </Box>
+      {transcript && (
+        <Text fontSize="md" fontWeight="medium" textAlign="center">
+          {t('lastCommand')}: {transcript}
+        </Text>
+      )}
+      {error && (
+        <Text color="red.500" fontSize="sm" textAlign="center">
+          {error}
+        </Text>
+      )}
+    </VStack>
   );
 };
 

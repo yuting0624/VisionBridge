@@ -8,15 +8,19 @@ const client = new textToSpeech.TextToSpeechClient({
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'POST') {
     try {
-      const { text } = req.body;
+      const { text, rate = 1.3, volume = 1.0 } = req.body;
       if (!text) {
         return res.status(400).json({ error: 'No text provided' });
       }
 
       const request = {
         input: { text },
-        voice: { languageCode: 'en-US', ssmlGender: 'NEUTRAL' as const },
-        audioConfig: { audioEncoding: 'MP3' as const },
+        voice: { languageCode: 'ja-JP', name: 'ja-JP-Neural2-B', ssmlGender: 'FEMALE' as const },
+        audioConfig: { 
+          audioEncoding: 'MP3' as const,
+          speakingRate: rate,
+          volumeGainDb: (volume - 1) * 6, // Convert 0-1 range to dB
+        },
       };
 
       const [response] = await client.synthesizeSpeech(request);
@@ -27,10 +31,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       res.setHeader('Content-Type', 'audio/mpeg');
-      res.send(audioContent);
+      res.send(Buffer.from(audioContent));
     } catch (error) {
-      console.error('Error synthesizing speech:', error);
-      res.status(500).json({ error: 'Error synthesizing speech', details: error instanceof Error ? error.message : 'Unknown error' });
+      console.error('Error in text-to-speech:', error);
+      let errorMessage = 'テキスト読み上げ中にエラーが発生しました';
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      res.status(500).json({ error: errorMessage });
     }
   } else {
     res.setHeader('Allow', ['POST']);
