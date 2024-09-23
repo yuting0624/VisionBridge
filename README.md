@@ -1,60 +1,73 @@
 # VisionBridge
 
-VisionBridgeは、視覚障害者の日常生活をサポートするためのAI駆動型アシスタントアプリケーションです。画像認識、音声認識、自然言語処理などの最新のAI技術を活用し、ユーザーの周囲の環境を解釈し、音声フィードバックを提供します。
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+
+VisionBridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェクトで、最新の AI 技術を活用して視覚障害者の日常生活をサポートする革新的なアシスタントアプリケーションです。
+
+[詳細なプロジェクト概要はこちら](projectOverview.md)
+
+## 目次
+
+- [主な機能](#主な機能)
+- [技術スタック](#技術スタック)
+- [セットアップ](#セットアップ)
+- [使用方法](#使用方法)
+- [貢献方法](#貢献方法)
+- [ライセンス](#ライセンス)
 
 ## 主な機能
 
-1. リアルタイム画像分析
-2. 音声コマンド認識（STT + DialogFlow）
-3. テキスト読み上げ（TTS）
-4. 位置情報取得+経路案内
+1. **リアルタイム環境認識**: AI による周囲の状況分析と音声フィードバック
+2. **ナビゲーション支援**: 音声ガイドによる目的地までの最適ルート案内
+3. **オブジェクト・テキスト認識**: 物体や文字の詳細情報を音声で提供
+4. **音声コマンド操作**: 直感的な音声指示によるアプリ制御
 
-## 使用技術
+## 技術スタック
 
-- フロントエンド: Next.js, React, TypeScript
-- バックエンド: Node.js, Express
-- AI/ML: Google Cloud Vertex API, Google Cloud Speech-to-Text, Google Cloud Text-to-Speech
-- 自然言語処理: Vertex AI (Gemini), DialogFlow CX (Generator使用)
-- 地図サービス: Google Maps API
-- インフラストラクチャ: Google Cloud Platform (Cloud Run, Cloud Functions)
-- CI/CD: Google Cloud Build
+- **フロントエンド**: Next.js, React, TypeScript
+- **バックエンド**: Node.js, Express
+- **AI/ML**: Google Cloud Vertex API (Gemini), Speech-to-Text, Text-to-Speech
+- **自然言語処理**: DialogFlow CX (Generator 使用)
+- **地図サービス**: Google Maps API
+- **インフラ**: Google Cloud Platform (Cloud Run, Cloud Functions)
+- **CI/CD**: Google Cloud Build
 
-## 現在の実装状況
+## セットアップ
 
-1. リアルタイム画像分析
-   - カメラからのリアルタイム映像をキャプチャし、分析
-   - 物体検出、テキスト認識などの機能を実装
+1. リポジトリをクローン:
 
-2. 音声コマンド
-   - 音声入力を受け付け、自然言語処理によりコマンドを解釈
-   - 基本的なナビゲーション機能（「カメラを起動」など）を実装
+   `git clone https://github.com/yuting0624/VisionBridge.git`
 
-3. テキスト読み上げ
-   - 分析結果や重要な情報を音声でユーザーに伝達
+2. プロジェクトディレクトリに移動:
+   `cd VisionBridge`
 
-4. 位置情報サービス
-   - ユーザーの現在地を取得し、音声で通知
+3. 依存関係をインストール:
+   `npm install`
 
-5. 経路案内
-   - 目的地までの経路を取得し、視覚障害者向けに最適化された案内を生成
+4. 環境変数を設定:
+   `cp .env.template .env`
 
-6. オフライン対応
-   - 基本的なオフライン機能を実装（オフラインページの表示）
+5. ローカルでの実行:
+   `npm run dev`
 
-7. 多言語対応
-   - i18nextを使用した多言語サポートの基盤を実装
+## 使用方法
 
-## 今後の展望
-
-- より高度でリアルタイムな画像・動画分析機能の追加（Pub/SubとDataflowの組み合わせなど）
-- ユーザーの行動パターン学習による個別化されたサポート
-- コミュニティ機能の追加（ユーザー間での情報共有など）
-- より多くの言語サポートの追加
+1. アプリを起動し、音声コマンド「ヘルプ」で使用方法を確認できます。
+2. カメラを起動し、周囲の環境分析を開始します。
+3. 音声コマンドで目的地を設定し、ナビゲーションを開始します。
 
 ## 貢献方法
 
-プロジェクトへの貢献に興味がある方は、新機能の提案、バグ報告、ドキュメントの改善など、あらゆる形の貢献を歓迎します。
+プロジェクトへの貢献を歓迎します！
+新機能の提案、バグ報告、ドキュメントの改善など、どんな形での貢献も大歓迎です。
 
 ## ライセンス
 
-このプロジェクトはMITライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルをご覧ください。
+このプロジェクトは MIT ライセンスの下で公開されています。詳細は[LICENSE](LICENSE)ファイルをご覧ください。
+
+---
+
+VisionBridge は Google Cloud AI ハッカソンへの提出作品です。
+このプロジェクトは、AI 技術を通じてより包括的な社会の実現を目指しています。
