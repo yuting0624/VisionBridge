@@ -1,0 +1,13 @@
+{
+  "name": "interpret-directions",
+  "version": "1.0.0",
+  "description": "Interpret directions for visually impaired users",
+  "main": "index.js",
+  "dependencies": {
+    "@google-cloud/vertexai": "^0.5.0",
+    "cors": "^2.8.5"
+  },
+  "engines": {
+    "node": "18"
+  }
+}

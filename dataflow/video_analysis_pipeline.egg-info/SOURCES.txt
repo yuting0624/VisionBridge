@@ -1,0 +1,7 @@
+setup.py
+video_analysis_pipeline.py
+video_analysis_pipeline.egg-info/PKG-INFO
+video_analysis_pipeline.egg-info/SOURCES.txt
+video_analysis_pipeline.egg-info/dependency_links.txt
+video_analysis_pipeline.egg-info/requires.txt
+video_analysis_pipeline.egg-info/top_level.txt

@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: video_analysis_pipeline
+Version: 0.1
+Requires-Dist: apache-beam[gcp]
+Requires-Dist: google-cloud-videointelligence
+Requires-Dist: google-cloud-aiplatform
