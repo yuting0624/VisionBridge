@@ -4,9 +4,10 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
 
-VisionBridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェクトで、最新の AI 技術を活用して視覚障害者の日常生活をサポートする革新的なアシスタントアプリケーションです。
+VisionBridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェクトで、最新の AI 技術を活用して視覚障がい者の日常生活をサポートする革新的なアシスタントアプリケーションです。
 
-[詳細なプロジェクト概要はこちら](projectOverview.md)
+[![発表動画](https://img.youtube.com/vi/XHFn-MErwkU/0.jpg)](https://youtu.be/XHFn-MErwkU)
+[詳細なプロジェクト概要はこちら](ProjectOverview.md)
 
 ## 目次
 
@@ -33,6 +34,8 @@ VisionBridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェ
 - **地図サービス**: Google Maps API
 - **インフラ**: Google Cloud Platform (Cloud Run, Cloud Functions)
 - **CI/CD**: Google Cloud Build
+
+![アーキテクチャ](./public/images/architecture.png)
 
 ## セットアップ
 
