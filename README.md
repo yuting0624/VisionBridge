@@ -8,6 +8,7 @@ VisionBridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェ
 
 
 [![発表動画](https://img.youtube.com/vi/XHFn-MErwkU/0.jpg)](https://youtu.be/XHFn-MErwkU)
+
 [詳細なプロジェクト概要はこちら](ProjectOverview.md)
 
 ## 目次
