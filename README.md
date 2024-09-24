@@ -2,10 +2,12 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+
+<a href="README_EN.md">
+  <img src="https://img.shields.io/badge/lang-English-brightgreen.svg" alt="English">
+</a>
 
 Vision Bridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェクトで、最新の AI 技術を活用して視覚障がい者の日常生活をサポートする革新的なアシスタントアプリケーションです。
-
 
 [![発表動画](https://img.youtube.com/vi/XHFn-MErwkU/0.jpg)](https://youtu.be/XHFn-MErwkU)
 
