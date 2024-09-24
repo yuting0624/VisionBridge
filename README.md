@@ -2,7 +2,6 @@
 
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-
 <a href="README_EN.md">
   <img src="https://img.shields.io/badge/lang-English-brightgreen.svg" alt="English">
 </a>
