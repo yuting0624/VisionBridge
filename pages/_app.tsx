@@ -31,8 +31,8 @@ function MyApp({ Component, pageProps }: AppProps) {
       <Head>
         <title>Vision Bridge - AIによる視覚支援</title>
         <link rel="icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="images/logo.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="images/logo.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
 
       </Head>

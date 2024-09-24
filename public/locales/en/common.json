@@ -46,7 +46,10 @@
   "voiceCommandInstruction": "You can operate with voice commands.",
   "helpMessage": "The main features of Vision Bridge are camera operation, voice commands, image analysis, and navigation. Simply tap the voice recognition start button and ask any questions. For example, say 'How to start the camera'.",
   "helpButtonLabel": "Show Help",
-  "helpButtonText": "Help"
-
+  "helpButtonText": "Help",
+  "getStarted": "Get Started",
+  "welcomeMessage1": "Welcome to Vision Bridge",
+  "appDescription": "Vision Bridge is an scene recognition app for the visually impaired.",
+  "learnMore": "Learn More"
 }
 

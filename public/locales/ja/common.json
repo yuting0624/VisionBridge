@@ -49,5 +49,9 @@
   "initializeAudio": "音声を初期化",
   "touchToInitialize": "タッチして音声を有効にしてください",
   "initialize": "初期化",
-  "audioInitialized": "音声が初期化されました"
+  "audioInitialized": "音声が初期化されました",
+  "welcomeMessage1": "Vision Bridgeへようこそ",
+  "appDescription": "Vision Bridgeは視覚障がい者のための環境認識アプリです。",
+  "getStarted": "始める",
+  "learnMore": "詳細を見る"
 }
