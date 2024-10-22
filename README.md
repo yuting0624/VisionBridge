@@ -6,6 +6,14 @@
   <img src="https://img.shields.io/badge/lang-English-brightgreen.svg" alt="English">
 </a>
 
+
+<div align="center">
+  <a href="https://googlecloudjapanaihackathon.devpost.com/">
+    <img src="https://img.shields.io/badge/🏆_Grand_Prize_Winner-Google_Cloud_AI_Hackathon_2024-1A73E8?style=for-the-badge&logo=google&logoColor=white&labelColor=090909" alt="Grand Prize - Google Cloud AI Hackathon 2024"/>
+  </a>
+</div>
+
+
 Vision Bridge は、Google Cloud AI Hackathon 2024 で開発されたプロジェクトで、最新の AI 技術を活用して視覚障がい者の日常生活をサポートする革新的なアシスタントアプリケーションです。
 
 [![発表動画](https://img.youtube.com/vi/XHFn-MErwkU/0.jpg)](https://youtu.be/XHFn-MErwkU)
@@ -39,6 +47,16 @@ Vision Bridge は、Google Cloud AI Hackathon 2024 で開発されたプロジ�
 - **CI/CD**: Google Cloud Build
 
 ![アーキテクチャ](./public/images/architecture.png)
+
+<div align="center">
+<p>
+    <img src="https://img.shields.io/badge/Built_with-Gemini-1A73E8?style=flat-square&logo=google&logoColor=white" alt="Built with Gemini"/>
+    <img src="https://img.shields.io/badge/Deployed_on-Google_Cloud-1A73E8?style=flat-square&logo=googlecloud&logoColor=white" alt="Deployed on Google Cloud"/>
+    <a href="https://cloudonair.withgoogle.com/events/generative-ai-summit-24-fall">
+      <img src="https://img.shields.io/badge/Featured_at-Generative_AI_Summit_Tokyo_'24-1A73E8?style=flat-square&logo=google&logoColor=white" alt="Featured at Generative AI Summit Tokyo '24"/>
+    </a>
+  </p>
+</div>
 
 ## セットアップ
 
